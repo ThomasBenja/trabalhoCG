@@ -4,6 +4,9 @@
 
 var LightMapDemoScene = function (gl) {
 	this.gl = gl;
+
+	this.chef = null;
+	this.chefKeys = {};
 };
 
 LightMapDemoScene.prototype.Load = function (cb) {
@@ -276,6 +279,14 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		);
 
 		cb();
+
+		me.chef = new Chef(me.gl, me.ShadowProgram);
+		me.chef.position = [0, 1, 0]; 
+		me.chef.scale = 0.45; 
+		me.chef.baseRotation = [0, 0, 0];  
+		me.chef.moveSpeed = 1.5; 
+		
+		console.log('Chef carregado com sucesso!');
 	});
 
 	me.PressedKeys = {
@@ -375,7 +386,7 @@ LightMapDemoScene.prototype.End = function () {
 //
 LightMapDemoScene.prototype._Update = function (dt) {
 
-	if (this.PressedKeys.Forward && !this.PressedKeys.Back) {
+	/*if (this.PressedKeys.Forward && !this.PressedKeys.Back) {
 		this.camera.moveForward(dt / 1000 * this.MoveForwardSpeed);
 	}
 
@@ -389,7 +400,7 @@ LightMapDemoScene.prototype._Update = function (dt) {
 
 	if (this.PressedKeys.Left && !this.PressedKeys.Right) {
 		this.camera.moveRight(-dt / 1000 * this.MoveForwardSpeed);
-	}
+	}*/
 
 	if (this.PressedKeys.Up && !this.PressedKeys.Down) {
 		this.camera.moveUp(dt / 1000 * this.MoveForwardSpeed);
@@ -408,8 +419,16 @@ LightMapDemoScene.prototype._Update = function (dt) {
 	}
 
 	
-
 	this.camera.GetViewMatrix(this.viewMatrix);
+
+	if (this.chef) {
+		this.chefKeys['w'] = this.PressedKeys.Forward;
+		this.chefKeys['a'] = this.PressedKeys.Left;
+		this.chefKeys['s'] = this.PressedKeys.Back;
+		this.chefKeys['d'] = this.PressedKeys.Right;
+		
+		this.chef.update(dt / 1000, this.chefKeys);
+	}
 };
 
 LightMapDemoScene.prototype._GenerateShadowMap = function () {
@@ -490,6 +509,24 @@ LightMapDemoScene.prototype._GenerateShadowMap = function () {
 			gl.drawElements(gl.TRIANGLES, this.Meshes[j].nPoints, gl.UNSIGNED_SHORT, 0);
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 		}
+
+		if (this.chef) {
+			this.chef.draw(gl, {
+				uModel: this.ShadowMapGenProgram.uniforms.mWorld
+			}, (modelMat, color, uniforms) => {
+				gl.uniformMatrix4fv(uniforms.uModel, gl.FALSE, modelMat);
+				
+				gl.bindBuffer(gl.ARRAY_BUFFER, this.chef.posBuf);
+				gl.vertexAttribPointer(
+					this.ShadowMapGenProgram.attribs.vPos,
+					3, gl.FLOAT, gl.FALSE, 0, 0
+				);
+				gl.enableVertexAttribArray(this.ShadowMapGenProgram.attribs.vPos);
+				
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.chef.idxBuf);
+				gl.drawElements(gl.TRIANGLES, this.chef.indexCount, gl.UNSIGNED_SHORT, 0);
+			});
+		}
 	}
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -559,6 +596,33 @@ LightMapDemoScene.prototype._Render = function () {
 		gl.drawElements(gl.TRIANGLES, this.Meshes[i].nPoints, gl.UNSIGNED_SHORT, 0);
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 	}
+
+		if (this.chef) {
+		this.chef.draw(gl, {
+			uModel: this.ShadowProgram.uniforms.mWorld,
+			uColor: this.ShadowProgram.uniforms.meshColor
+		}, (modelMat, color, uniforms) => {
+			gl.uniformMatrix4fv(uniforms.uModel, gl.FALSE, modelMat);
+			gl.uniform4fv(uniforms.uColor, new Float32Array([color[0], color[1], color[2], 1.0]));
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.chef.posBuf);
+			gl.vertexAttribPointer(
+				this.ShadowProgram.attribs.vPos,
+				3, gl.FLOAT, gl.FALSE, 0, 0
+			);
+			gl.enableVertexAttribArray(this.ShadowProgram.attribs.vPos);
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.chef.normBuf);
+			gl.vertexAttribPointer(
+				this.ShadowProgram.attribs.vNorm,
+				3, gl.FLOAT, gl.FALSE, 0, 0
+			);
+			gl.enableVertexAttribArray(this.ShadowProgram.attribs.vNorm);
+			
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.chef.idxBuf);
+			gl.drawElements(gl.TRIANGLES, this.chef.indexCount, gl.UNSIGNED_SHORT, 0);
+		});
+	}
 };
 
 //
@@ -611,6 +675,11 @@ LightMapDemoScene.prototype._OnKeyDown = function (e) {
 			break;
 		case 'ArrowLeft':
 			this.PressedKeys.RotLeft = true;
+			break;
+		case 'Space':
+			if (this.chef) {
+				this.chef.triggerArmAnimation();
+			}
 			break;
 	}
 };
