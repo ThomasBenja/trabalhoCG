@@ -7,6 +7,9 @@ var LightMapDemoScene = function (gl) {
 
 	this.chef = null;
 	this.chefKeys = {};
+
+	this.waiter = null;
+	this.waiterKeys = {};
 };
 
 LightMapDemoScene.prototype.Load = function (cb) {
@@ -365,11 +368,19 @@ LightMapDemoScene.prototype.Load = function (cb) {
 
 		me.chef = new Chef(me.gl, me.ShadowProgram);
 		me.chef.position = [0, 1, 0]; 
-		me.chef.scale = 0.45; 
+		me.chef.scale = 0.75; 
 		me.chef.baseRotation = [0, 0, 0];  
 		me.chef.moveSpeed = 1.5; 
 		
 		console.log('Chef carregado com sucesso!');
+
+		me.waiter = new waiter(me.gl, me.ShadowProgram);
+		me.waiter.position = [3, 1, 0]; // Posiciona em outro lugar
+		me.waiter.scale = 0.75;
+		me.waiter.baseRotation = [0, 0, 0];
+		me.waiter.moveSpeed = 1.5;
+
+		console.log('Garçom carregado com sucesso!');
 	});
 
 	me.PressedKeys = {
@@ -382,6 +393,11 @@ LightMapDemoScene.prototype.Load = function (cb) {
 
 		RotLeft: false,
 		RotRight: false,
+
+		WaiterForward: false,
+		WaiterBack: false,
+		WaiterLeft: false,
+		WaiterRight: false,
 	};
 
 	me.MoveForwardSpeed = 3.5;
@@ -538,6 +554,15 @@ LightMapDemoScene.prototype._Update = function (dt) {
 		
 		this.chef.update(dt / 1000, this.chefKeys);
 	}
+
+	if (this.waiter) {
+		this.waiterKeys['w'] = this.PressedKeys.WaiterForward || false;
+		this.waiterKeys['a'] = this.PressedKeys.WaiterLeft || false;
+		this.waiterKeys['s'] = this.PressedKeys.WaiterBack || false;
+		this.waiterKeys['d'] = this.PressedKeys.WaiterRight || false;
+		
+		this.waiter.update(dt / 1000, this.waiterKeys);
+	}
 };
 
 LightMapDemoScene.prototype._GenerateShadowMap = function () {
@@ -636,6 +661,24 @@ LightMapDemoScene.prototype._GenerateShadowMap = function () {
 				gl.drawElements(gl.TRIANGLES, this.chef.indexCount, gl.UNSIGNED_SHORT, 0);
 			});
 		}
+
+		if (this.waiter) {
+			this.waiter.draw(gl, {
+				uModel: this.ShadowMapGenProgram.uniforms.mWorld
+			}, (modelMat, color, uniforms) => {
+				gl.uniformMatrix4fv(uniforms.uModel, gl.FALSE, modelMat);
+				
+				gl.bindBuffer(gl.ARRAY_BUFFER, this.waiter.posBuf);
+				gl.vertexAttribPointer(
+					this.ShadowMapGenProgram.attribs.vPos,
+					3, gl.FLOAT, gl.FALSE, 0, 0
+				);
+				gl.enableVertexAttribArray(this.ShadowMapGenProgram.attribs.vPos);
+				
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.waiter.idxBuf);
+				gl.drawElements(gl.TRIANGLES, this.waiter.indexCount, gl.UNSIGNED_SHORT, 0);
+			});
+		}
 	}
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -732,6 +775,33 @@ LightMapDemoScene.prototype._Render = function () {
 			gl.drawElements(gl.TRIANGLES, this.chef.indexCount, gl.UNSIGNED_SHORT, 0);
 		});
 	}
+
+	if (this.waiter) {
+		this.waiter.draw(gl, {
+			uModel: this.ShadowProgram.uniforms.mWorld,
+			uColor: this.ShadowProgram.uniforms.meshColor
+		}, (modelMat, color, uniforms) => {
+			gl.uniformMatrix4fv(uniforms.uModel, gl.FALSE, modelMat);
+			gl.uniform4fv(uniforms.uColor, new Float32Array([color[0], color[1], color[2], 1.0]));
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.waiter.posBuf);
+			gl.vertexAttribPointer(
+				this.ShadowProgram.attribs.vPos,
+				3, gl.FLOAT, gl.FALSE, 0, 0
+			);
+			gl.enableVertexAttribArray(this.ShadowProgram.attribs.vPos);
+			
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.waiter.normBuf);
+			gl.vertexAttribPointer(
+				this.ShadowProgram.attribs.vNorm,
+				3, gl.FLOAT, gl.FALSE, 0, 0
+			);
+			gl.enableVertexAttribArray(this.ShadowProgram.attribs.vNorm);
+			
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.waiter.idxBuf);
+			gl.drawElements(gl.TRIANGLES, this.waiter.indexCount, gl.UNSIGNED_SHORT, 0);
+		});
+	}
 };
 
 //
@@ -785,6 +855,23 @@ LightMapDemoScene.prototype._OnKeyDown = function (e) {
 		case 'ArrowLeft':
 			this.PressedKeys.RotLeft = true;
 			break;
+		case 'KeyI':
+			this.PressedKeys.WaiterForward = true;
+			break;
+		case 'KeyJ':
+			this.PressedKeys.WaiterLeft = true;
+			break;
+		case 'KeyL':
+			this.PressedKeys.WaiterRight = true;
+			break;
+		case 'KeyK':
+			this.PressedKeys.WaiterBack = true;
+			break;
+		case 'KeyP':
+			if (this.waiter) {
+				this.waiter.triggerArmAnimation();
+			}
+			break;
 		case 'Space':
 			if (this.chef) {
 				this.chef.triggerArmAnimation();
@@ -816,9 +903,20 @@ LightMapDemoScene.prototype._OnKeyUp = function (e) {
 		case 'ArrowRight':
 			this.PressedKeys.RotRight = false;
 			break;
-		// ... (código dos cases das teclas acima) ...
 		case 'ArrowLeft':
 			this.PressedKeys.RotLeft = false;
+			break;
+		case 'KeyI':
+			this.PressedKeys.WaiterForward = false;
+			break;
+		case 'KeyJ':
+			this.PressedKeys.WaiterLeft = false;
+			break;
+		case 'KeyL':
+			this.PressedKeys.WaiterRight = false;
+			break;
+		case 'KeyK':
+			this.PressedKeys.WaiterBack = false;
 			break;
 	}
 }; // <--- ESTE FECHAMENTO PRECISA FICAR AQUI, ANTES DA FUNÇÃO NOVA!
