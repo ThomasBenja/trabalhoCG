@@ -20,6 +20,16 @@ LightMapDemoScene.prototype.Load = function (cb) {
 				RoomModel: 'Room.json'
 			}, LoadJSONResource, callback);
 		},
+		OBJModels: function (callback) {
+			async.map({
+				Carne: 'models/carne.obj',
+				PaoBase: 'models/base.obj',
+				PaoTopo: 'models/topo.obj',
+				Queijo: 'models/cheese.obj',
+				Salada: 'models/alface.obj',
+				Tomate: 'models/tomato.obj'
+			}, LoadOBJ, callback);
+		},
 		ShaderCode: function (callback) {
 			async.map({
 				'NoShadow_VSText': 'shaders/NoShadow.vs.glsl',
@@ -94,6 +104,55 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		mat4.translate(me.CounterMesh.world, me.CounterMesh.world, vec3.fromValues(-4.49, 3.5, 0.5));
         mat4.scale(me.CounterMesh.world, me.CounterMesh.world, vec3.fromValues(0.5, 1.5, 0.5));
 
+		// Create OBJ meshes if loaded
+		if (loadResults.OBJModels) {
+			var obj = loadResults.OBJModels;
+			
+			// Hambúrguer
+			if (obj.PaoBase) {
+				me.HamburguerMesh = new Model(
+					me.gl,
+					obj.PaoBase.vertices,
+					obj.PaoBase.indices,
+					obj.PaoBase.normals,
+					vec4.fromValues(0.8, 0.5, 0.2, 1)
+				);
+				mat4.translate(me.HamburguerMesh.world, me.HamburguerMesh.world, vec3.fromValues(3, -1, 1.15));
+				mat4.rotate(me.HamburguerMesh.world, me.HamburguerMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
+				mat4.scale(me.HamburguerMesh.world, me.HamburguerMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
+			}
+			if(obj.Salada) {
+				me.SaladaMesh = new Model(me.gl, obj.Salada.vertices, obj.Salada.indices, obj.Salada.normals, vec4.fromValues(0.63, 0.79, 0.21, 1.0));
+				mat4.translate(me.SaladaMesh.world, me.SaladaMesh.world, vec3.fromValues(3, -1, 1.15));
+				mat4.rotate(me.SaladaMesh.world, me.SaladaMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
+				mat4.scale(me.SaladaMesh.world, me.SaladaMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
+			}
+			if(obj.Carne) {
+				me.CarneMesh = new Model(me.gl, obj.Carne.vertices, obj.Carne.indices, obj.Carne.normals, vec4.fromValues(0.38, 0.25, 0.25, 1));
+				mat4.translate(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(3, -1, 1.15));
+				mat4.rotate(me.CarneMesh.world, me.CarneMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
+				mat4.scale(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
+			}
+			if(obj.Queijo) {
+				me.QueijoMesh = new Model(me.gl, obj.Queijo.vertices, obj.Queijo.indices, obj.Queijo.normals, vec4.fromValues(0.93, 0.60, 0.04, 1.0));
+				mat4.translate(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(3, -1, 1.15));
+				mat4.rotate(me.QueijoMesh.world, me.QueijoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
+				mat4.scale(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
+			}
+			if(obj.Tomate) {
+				me.TomateMesh = new Model(me.gl, obj.Tomate.vertices, obj.Tomate.indices, obj.Tomate.normals, vec4.fromValues(1.0, 0.388, 0.278, 1.0));
+				mat4.translate(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(3, -1, 1.13));
+				mat4.rotate(me.TomateMesh.world, me.TomateMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
+				mat4.scale(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
+			}		
+			if(obj.PaoTopo) {
+				me.PaoTopoMesh = new Model(me.gl, obj.PaoTopo.vertices, obj.PaoTopo.indices, obj.PaoTopo.normals, vec4.fromValues(0.8, 0.5, 0.2, 1));
+				mat4.translate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(3, -1, 1.09));
+				mat4.rotate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
+				mat4.scale(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
+			}			
+
+		}
 
 		me.Meshes = [
 			me.TableMesh,
@@ -101,6 +160,14 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			me.WallsMesh,
 			me.CounterMesh,
 		];
+
+		if (me.HamburguerMesh) me.Meshes.push(me.HamburguerMesh);
+		if (me.CarneMesh) me.Meshes.push(me.CarneMesh);
+		if (me.PaoBaseMesh) me.Meshes.push(me.PaoBaseMesh);
+		if (me.PaoTopoMesh) me.Meshes.push(me.PaoTopoMesh);
+		if (me.QueijoMesh) me.Meshes.push(me.QueijoMesh);
+		if (me.SaladaMesh) me.Meshes.push(me.SaladaMesh);
+		if (me.TomateMesh) me.Meshes.push(me.TomateMesh);
 
 		//
 		// Create Shaders
@@ -395,6 +462,31 @@ LightMapDemoScene.prototype.End = function () {
 	if (this.nextFrameHandle) {
 		cancelAnimationFrame(this.nextFrameHandle);
 	}
+};
+
+// Utility: set position and optional uniform scale for ingredient meshes at runtime
+LightMapDemoScene.prototype.SetIngredientPosition = function (name, x, y, z, scale) {
+	var mesh = this[name + 'Mesh'];
+	if (!mesh) return false;
+
+	// Reset world transform then apply translate and optional scale
+	mat4.identity(mesh.world);
+	mat4.translate(mesh.world, mesh.world, vec3.fromValues(x, y, z));
+	if (typeof scale !== 'undefined' && scale !== null) {
+		mat4.scale(mesh.world, mesh.world, vec3.fromValues(scale, scale, scale));
+	}
+	return true;
+};
+
+// Utility: rotate ingredient mesh around a given axis
+// axis: vec3 (0,0,1) for Z-axis, (1,0,0) for X-axis, (0,1,0) for Y-axis
+// angleRadians: rotation angle in radians (use Math.PI / 180 * degrees to convert from degrees)
+LightMapDemoScene.prototype.RotateIngredient = function (name, axis, angleRadians) {
+	var mesh = this[name + 'Mesh'];
+	if (!mesh) return false;
+
+	mat4.rotate(mesh.world, mesh.world, angleRadians, axis);
+	return true;
 };
 
 //
