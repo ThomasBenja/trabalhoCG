@@ -10,6 +10,14 @@ var LightMapDemoScene = function (gl) {
 
 	this.waiter = null;
 	this.waiterKeys = {};
+
+	this.score = 0;
+	
+	this.isGameStarted = false; 
+    this.startTime = 0;
+
+	this.gameDuration = 10; // Tempo total em segundos (ex: 60 segundos)
+    this.isGameOver = false;
 };
 
 LightMapDemoScene.prototype.Load = function (cb) {
@@ -405,6 +413,24 @@ LightMapDemoScene.prototype.Load = function (cb) {
 	me.textureSize = getParameterByName('texSize') || 512;
 
 	me.lightDisplacementInputAngle = 0.0;
+
+	var btnInicio = document.getElementById('BotaoInicio');
+    if (btnInicio) {
+        btnInicio.onclick = function() {
+            // Esconde a tela de início
+            document.getElementById('TelaDeInicio').style.display = 'none';
+            
+			document.getElementById('placar').style.display = 'block';
+            document.getElementById('relogio').style.display = 'block';
+            // Destrava o jogo
+            me.isGameStarted = true;
+            
+            // Inicia o relógio AGORA (para não contar o tempo que ficou no menu)
+            me.startTime = Date.now();
+            
+            console.log("Jogo Iniciado!");
+        };
+    }
 };
 
 LightMapDemoScene.prototype.Unload = function () {
@@ -509,6 +535,21 @@ LightMapDemoScene.prototype.RotateIngredient = function (name, axis, angleRadian
 // Private Methods
 //
 LightMapDemoScene.prototype._Update = function (dt) {
+	//  SE O JOGO ACABOU, NÃO CALCULE NADA
+    if (!this.isGameStarted || this.isGameOver) {
+        return; // Sai da função imediatamente. O boneco congela.
+    }
+
+    //  VERIFICA O TEMPO
+    var now = Date.now();
+    var secondsPassed = Math.floor((now - this.startTime) / 1000);
+
+	this.UpdateTimerDisplay();
+
+	if (secondsPassed >= this.gameDuration) {
+        this.EndGame();
+        return; // Sai da função
+    }
 
 	/*if (this.PressedKeys.Forward && !this.PressedKeys.Back) {
 		this.camera.moveForward(dt / 1000 * this.MoveForwardSpeed);
@@ -919,9 +960,46 @@ LightMapDemoScene.prototype._OnKeyUp = function (e) {
 			this.PressedKeys.WaiterBack = false;
 			break;
 	}
-}; // <--- ESTE FECHAMENTO PRECISA FICAR AQUI, ANTES DA FUNÇÃO NOVA!
+}; 
 
-// --- AGORA SIM, FORA DE TUDO, A FUNÇÃO FICA AQUI: ---
+LightMapDemoScene.prototype.EndGame = function() {
+    if (this.isGameOver) return; // Se já acabou, não faz nada
+    
+    this.isGameOver = true;
+    console.log("FIM DE JOGO! Pontuação Final: " + this.score);
+
+	var menu = document.getElementById('TelaDeEndGame');
+
+	var textoPontos = document.getElementById('final-score-display');
+    if (textoPontos) {
+        textoPontos.innerText = "Pontuação Final: " + this.score;
+    }
+
+    if (menu) {
+        menu.style.display = 'block';
+    }
+  };
+
+// Função que atualiza o relógio na tela
+LightMapDemoScene.prototype.UpdateTimerDisplay = function() {
+    var timerDiv = document.getElementById('relogio');
+    if (!timerDiv) return;
+
+    // Calcula quantos segundos passaram desde o início
+    var now = Date.now();
+    var diff = Math.floor((now - this.startTime) / 1000);
+
+    // Matemática simples para separar minutos e segundos
+    var minutes = Math.floor(diff / 60);
+    var seconds = diff % 60;
+
+    // Adiciona o zero na frente se for menor que 10 (ex: "05")
+    var minStr = minutes < 10 ? "0" + minutes : minutes;
+    var secStr = seconds < 10 ? "0" + seconds : seconds;
+
+    timerDiv.innerText = "Tempo: " + minStr + ":" + secStr;
+};
+
 
 function GetCubeData() {
 	return {
