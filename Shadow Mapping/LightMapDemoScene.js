@@ -16,9 +16,10 @@ var LightMapDemoScene = function (gl) {
 	this.isGameStarted = false; 
     this.startTime = 0;
 
-	this.gameDuration = 10; // Tempo total em segundos (ex: 60 segundos)
+	this.gameDuration = 120; // Tempo total em segundos (ex: 60 segundos)
     this.isGameOver = false;
 };
+
 
 LightMapDemoScene.prototype.Load = function (cb) {
 	console.log('Loading demo scene');
@@ -551,7 +552,36 @@ LightMapDemoScene.prototype._Update = function (dt) {
         return; // Sai da função
     }
 
-	/*if (this.PressedKeys.Forward && !this.PressedKeys.Back) {
+	// --- CONFIGURAÇÕES ---
+    var tamanhoDaSala = 4.20;  // Limite horizontal (Paredes)
+    var alturaDosOlhos = 2.0; // Altura fixa do chão (Altura)
+
+    // 1. TRAVAR PAREDES LATERAIS (Eixo X - Índice 0)
+    // Se tentar sair pela esquerda...
+    if (this.camera.position[0] < -tamanhoDaSala) {
+        this.camera.position[0] = -tamanhoDaSala;
+    }
+    // Se tentar sair pela direita...
+    if (this.camera.position[0] > tamanhoDaSala) {
+        this.camera.position[0] = tamanhoDaSala;
+    }
+
+    // 2. TRAVAR PAREDES FUNDO (Eixo Z - Índice 2)
+    // Se tentar sair pelo fundo...
+    if (this.camera.position[1] < -tamanhoDaSala) {
+        this.camera.position[1] = -tamanhoDaSala;
+    }
+    // Se tentar sair pela frente...
+    if (this.camera.position[1] > tamanhoDaSala) {
+        this.camera.position[1] = tamanhoDaSala;
+    }
+
+    // 3. FIXAR A ALTURA (Eixo Y - Índice 1)
+    // Isso garante que você não voe e nem afunde no chão
+    this.camera.position[2] = alturaDosOlhos;
+
+
+	if (this.PressedKeys.Forward && !this.PressedKeys.Back) {
 		this.camera.moveForward(dt / 1000 * this.MoveForwardSpeed);
 	}
 
@@ -559,7 +589,7 @@ LightMapDemoScene.prototype._Update = function (dt) {
 		this.camera.moveForward(-dt / 1000 * this.MoveForwardSpeed);
 	}
 
-	if (this.PressedKeys.Right && !this.PressedKeys.Left) {
+	/*if (this.PressedKeys.Right && !this.PressedKeys.Left) {
 		this.camera.moveRight(dt / 1000 * this.MoveForwardSpeed);
 	}
 
@@ -567,13 +597,13 @@ LightMapDemoScene.prototype._Update = function (dt) {
 		this.camera.moveRight(-dt / 1000 * this.MoveForwardSpeed);
 	}*/
 
-	if (this.PressedKeys.Up && !this.PressedKeys.Down) {
+	/*if (this.PressedKeys.Up && !this.PressedKeys.Down) {
 		this.camera.moveUp(dt / 1000 * this.MoveForwardSpeed);
 	}
 
 	if (this.PressedKeys.Down && !this.PressedKeys.Up) {
 		this.camera.moveUp(-dt / 1000 * this.MoveForwardSpeed);
-	}
+	}*/
 
 	if (this.PressedKeys.RotRight && !this.PressedKeys.RotLeft) {
 		this.camera.rotateRight(-dt / 1000 * this.RotateSpeed);
@@ -584,17 +614,16 @@ LightMapDemoScene.prototype._Update = function (dt) {
 	}
 
 	
-
 	this.camera.GetViewMatrix(this.viewMatrix);
 
 	if (this.chef) {
-		this.chefKeys['w'] = this.PressedKeys.Forward;
-		this.chefKeys['a'] = this.PressedKeys.Left;
-		this.chefKeys['s'] = this.PressedKeys.Back;
-		this.chefKeys['d'] = this.PressedKeys.Right;
-		
-		this.chef.update(dt / 1000, this.chefKeys);
-	}
+    this.chefKeys['w'] = this.PressedKeys.ChefForward || false;
+    this.chefKeys['a'] = this.PressedKeys.ChefLeft || false;
+    this.chefKeys['s'] = this.PressedKeys.ChefBack || false;
+    this.chefKeys['d'] = this.PressedKeys.ChefRight || false;
+    
+    this.chef.update(dt / 1000, this.chefKeys);
+}
 
 	if (this.waiter) {
 		this.waiterKeys['w'] = this.PressedKeys.WaiterForward || false;
@@ -873,23 +902,23 @@ LightMapDemoScene.prototype._OnResizeWindow = function () {
 LightMapDemoScene.prototype._OnKeyDown = function (e) {
 	switch(e.code) {
 		case 'KeyW':
-			this.PressedKeys.Forward = true;
+			this.PressedKeys.ChefForward = true;
 			break;
 		case 'KeyA':
-			this.PressedKeys.Left = true;
+			this.PressedKeys.ChefLeft = true;
 			break;
 		case 'KeyD':
-			this.PressedKeys.Right = true;
+			this.PressedKeys.ChefRight = true;
 			break;
 		case 'KeyS':
-			this.PressedKeys.Back = true;
+			this.PressedKeys.ChefBack = true;
 			break;
 		case 'ArrowUp':
-			this.PressedKeys.Up = true;
-			break;
+    	this.PressedKeys.Forward = true; // AGORA VAI PRA FRENTE (X/Z)
+    	break;
 		case 'ArrowDown':
-			this.PressedKeys.Down = true;
-			break;
+    	this.PressedKeys.Back = true;    // AGORA VAI PRA TRÁS (X/Z)
+    	break;
 		case 'ArrowRight':
 			this.PressedKeys.RotRight = true;
 			break;
@@ -924,22 +953,22 @@ LightMapDemoScene.prototype._OnKeyDown = function (e) {
 LightMapDemoScene.prototype._OnKeyUp = function (e) {
 	switch(e.code) {
 		case 'KeyW':
-			this.PressedKeys.Forward = false;
+			this.PressedKeys.ChefForward = false;
 			break;
 		case 'KeyA':
-			this.PressedKeys.Left = false;
+			this.PressedKeys.ChefLeft = false;
 			break;
 		case 'KeyD':
-			this.PressedKeys.Right = false;
+			this.PressedKeys.ChefRight = false;
 			break;
 		case 'KeyS':
-			this.PressedKeys.Back = false;
+			this.PressedKeys.ChefBack = false;
 			break;
 		case 'ArrowUp':
-			this.PressedKeys.Up = false;
+			this.PressedKeys.Forward = false;
 			break;
 		case 'ArrowDown':
-			this.PressedKeys.Down = false;
+			this.PressedKeys.Back = false;
 			break;
 		case 'ArrowRight':
 			this.PressedKeys.RotRight = false;
