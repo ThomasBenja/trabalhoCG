@@ -1,6 +1,6 @@
 'use strict';
 
-// Array flattening trick from http://stackoverflow.com/questions/10865025/merge-flatten-a-multidimensional-array-in-javascript
+
 
 var LightMapDemoScene = function (gl) {
 	this.gl = gl;
@@ -58,9 +58,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			return;
 		}
 
-		//
-		// Create Model objects
-		//
+		
 		for (var i = 0; i < loadResults.Models.RoomModel.meshes.length; i++) {
 			var mesh = loadResults.Models.RoomModel.meshes[i];
 			switch (mesh.name) {
@@ -116,7 +114,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		mat4.translate(me.CounterMesh.world, me.CounterMesh.world, vec3.fromValues(-4.49, 3.5, 0.5));
         mat4.scale(me.CounterMesh.world, me.CounterMesh.world, vec3.fromValues(0.5, 1.5, 0.5));
 
-		// Create OBJ meshes if loaded
+		
 		if (loadResults.OBJModels) {
 			var obj = loadResults.OBJModels;
 			
@@ -181,9 +179,9 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		if (me.SaladaMesh) me.Meshes.push(me.SaladaMesh);
 		if (me.TomateMesh) me.Meshes.push(me.TomateMesh);
 
-		//
-		// Create Shaders
-		//
+	
+		//Shaders
+		
 		me.NoShadowProgram = CreateShaderProgram(
 			me.gl, loadResults.ShaderCode.NoShadow_VSText,
 			loadResults.ShaderCode.NoShadow_FSText
@@ -250,9 +248,9 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			vPos: me.gl.getAttribLocation(me.ShadowMapGenProgram, 'vPos'),
 		};
 
-		//
-		// Create Framebuffers and Textures
-		//
+		
+		// Framebuffers e Textures
+		
 		me.shadowMapCube = me.gl.createTexture();
 		me.gl.bindTexture(me.gl.TEXTURE_CUBE_MAP, me.shadowMapCube);
 		me.gl.texParameteri(me.gl.TEXTURE_CUBE_MAP, me.gl.TEXTURE_MIN_FILTER, me.gl.LINEAR);
@@ -298,7 +296,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		me.gl.bindFramebuffer(me.gl.FRAMEBUFFER, null);
 
 		//
-		// Logical Values
+		// Valores Lógicos
 		//
 		me.camera = new Camera(
 			vec3.fromValues(0, 0, 1.85),
@@ -318,37 +316,37 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		);
 
 		me.shadowMapCameras = [
-			// Positive X
+			// Positivo X
 			new Camera(
 				me.lightPosition,
 				vec3.add(vec3.create(), me.lightPosition, vec3.fromValues(1, 0, 0)),
 				vec3.fromValues(0, -1, 0)
 			),
-			// Negative X
+			// Negativo X
 			new Camera(
 				me.lightPosition,
 				vec3.add(vec3.create(), me.lightPosition, vec3.fromValues(-1, 0, 0)),
 				vec3.fromValues(0, -1, 0)
 			),
-			// Positive Y
+			// Positivo Y
 			new Camera(
 				me.lightPosition,
 				vec3.add(vec3.create(), me.lightPosition, vec3.fromValues(0, 1, 0)),
 				vec3.fromValues(0, 0, 1)
 			),
-			// Negative Y
+			// Negativo Y
 			new Camera(
 				me.lightPosition,
 				vec3.add(vec3.create(), me.lightPosition, vec3.fromValues(0, -1, 0)),
 				vec3.fromValues(0, 0, -1)
 			),
-			// Positive Z
+			// Positivo o
 			new Camera(
 				me.lightPosition,
 				vec3.add(vec3.create(), me.lightPosition, vec3.fromValues(0, 0, 1)),
 				vec3.fromValues(0, -1, 0)
 			),
-			// Negative Z
+			// Negativo z
 			new Camera(
 				me.lightPosition,
 				vec3.add(vec3.create(), me.lightPosition, vec3.fromValues(0, 0, -1)),
@@ -384,7 +382,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		console.log('Chef carregado com sucesso!');
 
 		me.waiter = new waiter(me.gl, me.ShadowProgram);
-		me.waiter.position = [3, 1, 0]; // Posiciona em outro lugar
+		me.waiter.position = [3, 1, 0]; 
 		me.waiter.scale = 0.75;
 		me.waiter.baseRotation = [0, 0, 0];
 		me.waiter.moveSpeed = 1.5;
@@ -465,7 +463,7 @@ LightMapDemoScene.prototype.Begin = function () {
 
 	var me = this;
 
-	// Attach event listeners
+	
 	this.__ResizeWindowListener = this._OnResizeWindow.bind(this);
 	this.__KeyDownWindowListener = this._OnKeyDown.bind(this);
 	this.__KeyUpWindowListener = this._OnKeyUp.bind(this);
@@ -474,7 +472,7 @@ LightMapDemoScene.prototype.Begin = function () {
 	AddEvent(window, 'keydown', this.__KeyDownWindowListener);
 	AddEvent(window, 'keyup', this.__KeyUpWindowListener);
 	
-	// Render Loop
+	
 	var previousFrame = performance.now();
 	var dt = 0;
 	var loop = function (currentFrameTime) {
@@ -507,12 +505,12 @@ LightMapDemoScene.prototype.End = function () {
 	}
 };
 
-// Utility: set position and optional uniform scale for ingredient meshes at runtime
+
 LightMapDemoScene.prototype.SetIngredientPosition = function (name, x, y, z, scale) {
 	var mesh = this[name + 'Mesh'];
 	if (!mesh) return false;
 
-	// Reset world transform then apply translate and optional scale
+	
 	mat4.identity(mesh.world);
 	mat4.translate(mesh.world, mesh.world, vec3.fromValues(x, y, z));
 	if (typeof scale !== 'undefined' && scale !== null) {
@@ -521,9 +519,7 @@ LightMapDemoScene.prototype.SetIngredientPosition = function (name, x, y, z, sca
 	return true;
 };
 
-// Utility: rotate ingredient mesh around a given axis
-// axis: vec3 (0,0,1) for Z-axis, (1,0,0) for X-axis, (0,1,0) for Y-axis
-// angleRadians: rotation angle in radians (use Math.PI / 180 * degrees to convert from degrees)
+
 LightMapDemoScene.prototype.RotateIngredient = function (name, axis, angleRadians) {
 	var mesh = this[name + 'Mesh'];
 	if (!mesh) return false;
@@ -532,9 +528,7 @@ LightMapDemoScene.prototype.RotateIngredient = function (name, axis, angleRadian
 	return true;
 };
 
-//
-// Private Methods
-//
+
 LightMapDemoScene.prototype._Update = function (dt) {
 	//  SE O JOGO ACABOU, NÃO CALCULE NADA
     if (!this.isGameStarted || this.isGameOver) {
@@ -638,7 +632,7 @@ LightMapDemoScene.prototype._Update = function (dt) {
 LightMapDemoScene.prototype._GenerateShadowMap = function () {
 	var gl = this.gl;
 
-	// Set GL state status
+	
 	gl.useProgram(this.ShadowMapGenProgram);
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.shadowMapCube);
 	gl.bindFramebuffer(gl.FRAMEBUFFER, this.shadowMapFramebuffer);
@@ -648,7 +642,7 @@ LightMapDemoScene.prototype._GenerateShadowMap = function () {
 	gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
 
-	// Set per-frame uniforms
+	
 	gl.uniform2fv(
 		this.ShadowMapGenProgram.uniforms.shadowClipNearFar,
 		this.shadowClipNearFar
@@ -664,14 +658,14 @@ LightMapDemoScene.prototype._GenerateShadowMap = function () {
 	);
 
 	for (var i = 0; i < this.shadowMapCameras.length; i++) {
-		// Set per light uniforms
+		
 		gl.uniformMatrix4fv(
 			this.ShadowMapGenProgram.uniforms.mView,
 			gl.FALSE,
 			this.shadowMapCameras[i].GetViewMatrix(this.shadowMapViewMatrices[i])
 		);
 
-		// Set framebuffer destination
+		
 		gl.framebufferTexture2D(
 			gl.FRAMEBUFFER,
 			gl.COLOR_ATTACHMENT0,
@@ -689,16 +683,16 @@ LightMapDemoScene.prototype._GenerateShadowMap = function () {
 		gl.clearColor(0, 0, 0, 1);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		// Draw meshes
+		
 		for (var j = 0; j < this.Meshes.length; j++) {
-			// Per object uniforms
+			
 			gl.uniformMatrix4fv(
 				this.ShadowMapGenProgram.uniforms.mWorld,
 				gl.FALSE,
 				this.Meshes[j].world
 			);
 
-			// Set attributes
+			
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.Meshes[j].vbo);
 			gl.vertexAttribPointer(
 				this.ShadowMapGenProgram.attribs.vPos,
@@ -759,7 +753,7 @@ LightMapDemoScene.prototype._GenerateShadowMap = function () {
 LightMapDemoScene.prototype._Render = function () {
 	var gl = this.gl;
 
-	// Clear back buffer, set per-frame uniforms
+	
 	gl.enable(gl.CULL_FACE);
 	gl.enable(gl.DEPTH_TEST);
 
@@ -782,9 +776,9 @@ LightMapDemoScene.prototype._Render = function () {
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.shadowMapCube);
 
-	// Draw meshes
+	
 	for (var i = 0; i < this.Meshes.length; i++) {
-		// Per object uniforms
+		
 		gl.uniformMatrix4fv(
 			this.ShadowProgram.uniforms.mWorld,
 			gl.FALSE,
@@ -795,7 +789,7 @@ LightMapDemoScene.prototype._Render = function () {
 			this.Meshes[i].color
 		);
 
-		// Set attributes
+		
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.Meshes[i].vbo);
 		gl.vertexAttribPointer(
 			this.ShadowProgram.attribs.vPos,
@@ -874,22 +868,20 @@ LightMapDemoScene.prototype._Render = function () {
 	}
 };
 
-//
-// Event Listeners
-//
+
 LightMapDemoScene.prototype._OnResizeWindow = function () {
 	var gl = this.gl;
 
 	var targetHeight = window.innerWidth * 9 / 16;
 
 	if (window.innerHeight > targetHeight) {
-		// Center vertically
+		
 		gl.canvas.width = window.innerWidth;
 		gl.canvas.height = targetHeight;
 		gl.canvas.style.left = '0px';
 		gl.canvas.style.top = (window.innerHeight - targetHeight) / 2 + 'px';
 	} else {
-		// Center horizontally
+		
 		gl.canvas.width = window.innerHeight * 16 / 9;
 		gl.canvas.height = window.innerHeight;
 		gl.canvas.style.left = (window.innerWidth - (gl.canvas.width)) / 2 + 'px';
@@ -1064,3 +1056,4 @@ function GetCubeData() {
 		]
 	};
 }
+
