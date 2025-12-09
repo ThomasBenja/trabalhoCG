@@ -60,8 +60,7 @@ var CreateShaderProgram = function (gl, vsText, fsText) {
 
 	return program;
 
-	// Check: if (result.error)
-	// otherwise, program is GL program.
+
 };
 
 var Camera = function (position, lookAt, up) {
@@ -113,4 +112,5 @@ Camera.prototype.moveRight = function (dist) {
 
 Camera.prototype.moveUp = function (dist) {
 	vec3.scaleAndAdd(this.position, this.position, this.up, dist);
+
 };
