@@ -199,19 +199,19 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			}
 			if(obj.Queijo) {
 				me.QueijoMesh = new Model(me.gl, obj.Queijo.vertices, obj.Queijo.indices, obj.Queijo.normals, vec4.fromValues(0.93, 0.60, 0.04, 1.0));
-				mat4.translate(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(3, 0, 1.15));
+				mat4.translate(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(-4.3, 2.8, 0.97));
 				mat4.rotate(me.QueijoMesh.world, me.QueijoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
 			if(obj.Tomate) {
 				me.TomateMesh = new Model(me.gl, obj.Tomate.vertices, obj.Tomate.indices, obj.Tomate.normals, vec4.fromValues(1.0, 0.388, 0.278, 1.0));
-				mat4.translate(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(4, 0, 1.13));
+				mat4.translate(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(-4.3, 3.5, 0.9));
 				mat4.rotate(me.TomateMesh.world, me.TomateMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}		
 			if(obj.PaoTopo) {
 				me.PaoTopoMesh = new Model(me.gl, obj.PaoTopo.vertices, obj.PaoTopo.indices, obj.PaoTopo.normals, vec4.fromValues(0.8, 0.5, 0.2, 1));
-				mat4.translate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(4, -1.5, 1.09));
+				mat4.translate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(-4.3, 4, 0.9));
 				mat4.rotate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
