@@ -76,39 +76,85 @@ class Chef {
     this.indexCount = cubeIndices.length;
   }
   
-  update(dt, keys = {}) {
-    let moveDirX = 0;
-    let moveDirY = 0;
+ update(dt, keys = {}) {
+    const turnSpeed = 3.0; 
+
+    // 1. Rotação
+    if(keys['a']) this.rotation += turnSpeed * dt;
+    if(keys['d']) this.rotation -= turnSpeed * dt;
     
-    if(keys['w']) moveDirY += 1;  
-    if(keys['s']) moveDirY -= 1; 
-    if(keys['a']) moveDirX -= 1;  
-    if(keys['d']) moveDirX += 1;  
-    
-    const len = Math.sqrt(moveDirX * moveDirX + moveDirY * moveDirY);
-    
-    if(len > 0.01) {
-      const normX = moveDirX / len;
-      const normY = moveDirY / len;
+    // 2. Movimento
+    if(keys['w'] || keys['s']) {
+      const dir = keys['w'] ? 1 : -1;
+      const moveDirX = -Math.sin(this.rotation);
+      const moveDirY = Math.cos(this.rotation);
       
-      this.position[0] += normX * this.moveSpeed * dt;
-      this.position[1] += normY * this.moveSpeed * dt;
+      // Calculamos o movimento desejado
+      const deltaX = moveDirX * this.moveSpeed * dt * dir;
+      const deltaY = moveDirY * this.moveSpeed * dt * dir;
+
+      const limiteParede = 3.8;
+
+      // --- TENTATIVA DE MOVER NO EIXO X ---
+      let nextX = this.position[0] + deltaX;
+      
+      // 1. Verifica Parede X
+      if (nextX > limiteParede) nextX = limiteParede;
+      if (nextX < -limiteParede) nextX = -limiteParede;
+
+      // 2. Verifica Objetos (Mesa/Balcão) só no eixo X
+      // Se NÃO bater, aplicamos o movimento. Se bater, ignoramos o movimento X.
+      if (!this.checkCollision(nextX, this.position[1])) {
+          this.position[0] = nextX;
+      }
+
+      // --- TENTATIVA DE MOVER NO EIXO Y ---
+      let nextY = this.position[1] + deltaY;
+
+      // 1. Verifica Parede Y
+      if (nextY > limiteParede) nextY = limiteParede;
+      if (nextY < -limiteParede) nextY = -limiteParede;
+
+      // 2. Verifica Objetos (Mesa/Balcão) usando o NOVO X e o NOVO Y
+      // deslizar na quina da mesa
+      if (!this.checkCollision(this.position[0], nextY)) {
+          this.position[1] = nextY;
+      }
     }
     
+    // Animação do braço 
     if(this.armAnimating) {
       this.armTimer += dt;
       const duration = 0.6;
       const t = Math.min(1, this.armTimer / duration);
       const ease = t < 0.5 ? (2*t*t) : (1 - Math.pow(-2*t+2, 2)/2);
       this.armAngle = this.armTarget * ease;
-      
       if(t >= 1) {
         this.armTarget = 0;
         this.armAnimating = false;
       }
     }
   }
-  
+
+  // Verifica se uma posição (x, y) bate em algum objeto
+  checkCollision(x, y) {
+    // --- COLISÃO DA MESA (Lado Direito) ---
+    // A mesa está em x=3.8, y=-0.79. cria uma caixa em volta.
+    // Se X estiver entre 2.8 e 5.0 E Y estiver entre -1.8 e 0.2
+    if (x > 2.8 && x < 5.0 && y > -1.8 && y < 0.2) {
+      return true; // Bateu na mesa
+    }
+
+    // --- COLISÃO DO BALCÃO (Canto Superior Esquerdo) ---
+    // O balcão está em x=-4.49, y=3.5.
+    // Se X estiver entre -5.0 e -3.5 E Y estiver entre 2.0 e 5.0
+    if (x < -3.5 && x > -6.0 && y > 2.0 && y < 6.0) {
+      return true; // Bateu no balcão
+    }
+
+    return false; // Não bateu em nada
+  }
+
   triggerArmAnimation() {
     if(this.armAnimating) return;
     this.armTarget = -1.15;
@@ -128,7 +174,7 @@ class Chef {
       m = this.multiply(m, this.rotateY(this.baseRotation[1]));
       m = this.multiply(m, this.rotateZ(this.baseRotation[2]));
       
-      m = this.multiply(m, this.rotateY(this.rotation));
+      m = this.multiply(m, this.rotateZ(this.rotation));
       
       m = this.multiply(m, this.scale3d(this.scale, this.scale, this.scale));
       
