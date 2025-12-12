@@ -127,7 +127,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 					obj.PaoBase.normals,
 					vec4.fromValues(0.8, 0.5, 0.2, 1)
 				);
-				mat4.translate(me.HamburguerMesh.world, me.HamburguerMesh.world, vec3.fromValues(3, -1, 1.15));
+				mat4.translate(me.HamburguerMesh.world, me.HamburguerMesh.world, vec3.fromValues(3, -0.8, 1.15));
 				mat4.rotate(me.HamburguerMesh.world, me.HamburguerMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.HamburguerMesh.world, me.HamburguerMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
@@ -193,7 +193,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			}
 			if(obj.Carne) {
 				me.CarneMesh = new Model(me.gl, obj.Carne.vertices, obj.Carne.indices, obj.Carne.normals, vec4.fromValues(0.38, 0.25, 0.25, 1));
-				mat4.translate(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(3, -0.5, 1.15));
+				mat4.translate(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(3, -0.1, 1.15));
 				mat4.rotate(me.CarneMesh.world, me.CarneMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
@@ -219,7 +219,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 
 
 		}
-
+		
 		me.Meshes = [
 			me.TableMesh,
 			me.LightMesh,
@@ -227,20 +227,52 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			me.CounterMesh,
 		];
 
-		if (me.HamburguerMesh) me.Meshes.push(me.HamburguerMesh);
-		if (me.HamburguerMeshIng) me.Meshes.push(me.HamburguerMeshIng);
-		if (me.CarneMesh) me.Meshes.push(me.CarneMesh);
-		if (me.PaoBaseMesh) me.Meshes.push(me.PaoBaseMesh);
-		if (me.PaoTopoMesh) me.Meshes.push(me.PaoTopoMesh);
-		if (me.QueijoMesh) me.Meshes.push(me.QueijoMesh);
-		if (me.SaladaMesh) me.Meshes.push(me.SaladaMesh);
-		if (me.TomateMesh) me.Meshes.push(me.TomateMesh);
-		if (me.CarneMeshIng) me.MeshInges.push(me.CarneMeshIng);
-		if (me.PaoBaseMeshIng) me.MeshInges.push(me.PaoBaseMeshIng);
-		if (me.PaoTopoMeshIng) me.MeshInges.push(me.PaoTopoMeshIng);
-		if (me.QueijoMeshIng) me.MeshInges.push(me.QueijoMeshIng);
-		if (me.SaladaMeshIng) me.MeshInges.push(me.SaladaMeshIng);
-		if (me.TomateMeshIng) me.MeshInges.push(me.TomateMeshIng);
+		
+		// 1. OBRIGATÓRIO: Inicializar as listas antes de usar!
+        me.Interactables = [];
+        me.chefHandItem = null;
+
+        // 2. Função auxiliar para registrar itens de estoque
+        var registerStockItem = function(mesh, objData, color, name) {
+            if (mesh && objData) {
+                // Adiciona o mesh visual na tela
+                me.Meshes.push(mesh);
+
+                // Adiciona na lista de lógica
+                me.Interactables.push({ 
+                    type: 'stock',
+                    mesh: mesh,
+                    name: name,
+                    data: objData,     // Dados para clonagem
+                    color: color,
+                    originalScale: vec3.fromValues(0.15, 0.1, 0.15) 
+                });
+            }
+        };
+
+        // 3. Registrar os itens (apenas se os modelos OBJ carregaram)
+        if (loadResults.OBJModels) {
+             var obj = loadResults.OBJModels;
+             
+             // Registra cada ingrediente com sua cor específica
+             registerStockItem(me.HamburguerMesh, obj.PaoBase, [0.8, 0.5, 0.2, 1], 'Hamburguer');
+             registerStockItem(me.CarneMesh,      obj.Carne,   [0.38, 0.25, 0.25, 1], 'Carne');
+             registerStockItem(me.PaoBaseMesh,    obj.PaoBase, [0.8, 0.5, 0.2, 1], 'PaoBase');
+             registerStockItem(me.PaoTopoMesh,    obj.PaoTopo, [0.8, 0.5, 0.2, 1], 'PaoTopo');
+             registerStockItem(me.QueijoMesh,     obj.Queijo,  [0.93, 0.60, 0.04, 1.0], 'Queijo');
+             registerStockItem(me.SaladaMesh,     obj.Salada,  [0.63, 0.79, 0.21, 1.0], 'Salada');
+             registerStockItem(me.TomateMesh,     obj.Tomate,  [1.0, 0.388, 0.278, 1.0], 'Tomate');
+        }
+        
+        // Adiciona ingredientes decorativos extras (se existirem)
+        if (me.CarneMeshIng) me.MeshInges.push(me.CarneMeshIng);
+        if (me.PaoBaseMeshIng) me.MeshInges.push(me.PaoBaseMeshIng);
+        if (me.PaoTopoMeshIng) me.MeshInges.push(me.PaoTopoMeshIng);
+        if (me.QueijoMeshIng) me.MeshInges.push(me.QueijoMeshIng);
+        if (me.SaladaMeshIng) me.MeshInges.push(me.SaladaMeshIng);
+        if (me.TomateMeshIng) me.MeshInges.push(me.TomateMeshIng);
+
+
 
 	
 		//Shaders
@@ -552,6 +584,94 @@ LightMapDemoScene.prototype.Begin = function () {
 	me._OnResizeWindow();
 };
 
+LightMapDemoScene.prototype.AttemptInteraction = function() {
+    var chefPos = vec3.fromValues(this.chef.position[0], this.chef.position[1], this.chef.position[2]);
+    
+    // --- 1. SE ESTIVER SEGURANDO UM ITEM ---
+    if (this.chefHandItem) {
+        
+        // A. Tenta entregar para o GARÇOM primeiro
+        if (this.waiter) {
+            var waiterPos = vec3.fromValues(this.waiter.position[0], this.waiter.position[1], this.waiter.position[2]);
+            var distToWaiter = vec3.distance(chefPos, waiterPos);
+
+            // Se estiver perto (menos de 2.0 unidades)
+            if (distToWaiter < 2.0) {
+                console.log("Entregou " + this.chefHandItem.name + " para o garçom!");
+
+                // 1. Remove o item da lista de desenho (faz ele SUMIR da tela)
+                var index = this.Meshes.indexOf(this.chefHandItem.mesh);
+                if (index > -1) {
+                    this.Meshes.splice(index, 1);
+                }
+
+                // 2. Limpa a mão do chefe
+                this.chefHandItem = null;
+
+                // 3. Aumenta a pontuação (opcional, mas legal para feedback)
+                this.score += 10;
+                var placarDiv = document.getElementById('placar');
+                if (placarDiv) placarDiv.innerText = "Pontos: " + this.score;
+
+                // Sai da função (não deixa soltar no chão)
+                return;
+            }
+        }
+
+        // B. Se não entregou pro garçom, SOLTA NO CHÃO (Lógica antiga)
+        console.log("Soltou " + this.chefHandItem.name + " no chão.");
+        this.chefHandItem.isHeld = false;
+        this.chefHandItem = null;
+        return; 
+    }
+
+    // --- 2. SE A MÃO ESTIVER VAZIA: TENTA PEGAR DO ESTOQUE ---
+    var pickupRadius = 1.5; 
+    var closestDist = 999;
+    var stockToUse = null;
+
+    for (var i = 0; i < this.Interactables.length; i++) {
+        var stockItem = this.Interactables[i];
+        
+        var stockPos = vec3.create();
+        mat4.getTranslation(stockPos, stockItem.mesh.world);
+
+        var dist = vec3.distance(chefPos, stockPos);
+
+        if (dist < pickupRadius && dist < closestDist) {
+            closestDist = dist;
+            stockToUse = stockItem;
+        }
+    }
+
+    // Cria o clone se achou estoque
+    if (stockToUse) {
+        console.log("Pegou novo: " + stockToUse.name);
+        
+        var newMesh = new Model(
+            this.gl, 
+            stockToUse.data.vertices, 
+            stockToUse.data.indices, 
+            stockToUse.data.normals, 
+            vec4.fromValues(stockToUse.color[0], stockToUse.color[1], stockToUse.color[2], stockToUse.color[3])
+        );
+
+        this.Meshes.push(newMesh);
+
+        var newItem = {
+            mesh: newMesh,
+            name: stockToUse.name + "_Clone",
+            isHeld: true,
+            originalScale: stockToUse.originalScale
+        };
+
+        this.chefHandItem = newItem;
+        if (this.chef) this.chef.triggerArmAnimation();
+    }
+};
+
+
+
 LightMapDemoScene.prototype.End = function () {
 	if (this.__ResizeWindowListener) {
 		RemoveEvent(window, 'resize', this.__ResizeWindowListener);
@@ -690,7 +810,37 @@ LightMapDemoScene.prototype._Update = function (dt) {
 		
 		this.waiter.update(dt / 1000, this.waiterKeys);
 	}
+
+
+	// --- ATUALIZAÇÃO DOS ITENS SEGURADOS ---
+    // --- ATUALIZAÇÃO DOS ITENS SEGURADOS ---
+    if (this.chefHandItem) {
+        var item = this.chefHandItem;
+        var mesh = item.mesh; // Este é o clone, não o da mesa!
+
+        mat4.identity(mesh.world);
+
+        // Move para a posição do Chef
+        mat4.translate(mesh.world, mesh.world, vec3.fromValues(
+            this.chef.position[0], 
+            this.chef.position[1], 
+            this.chef.position[2]
+        ));
+
+        // Rotação do Chef
+        mat4.rotateZ(mesh.world, mesh.world, this.chef.rotation);
+
+        // Ajuste Fino na mão
+        mat4.translate(mesh.world, mesh.world, vec3.fromValues(0, 0.8, 1.0)); 
+
+        // Escala
+        mat4.scale(mesh.world, mesh.world, item.originalScale);
+    }
 };
+
+
+
+
 
 LightMapDemoScene.prototype._GenerateShadowMap = function () {
 	var gl = this.gl;
@@ -1000,6 +1150,7 @@ LightMapDemoScene.prototype._OnKeyDown = function (e) {
 		case 'Space':
 			if (this.chef) {
 				this.chef.triggerArmAnimation();
+				this.AttemptInteraction();
 			}
 			break;
 	}
