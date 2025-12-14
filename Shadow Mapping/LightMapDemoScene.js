@@ -21,8 +21,56 @@ var LightMapDemoScene = function (gl) {
 };
 
 
+LightMapDemoScene.prototype.UpdateOrderUI = function() {
+    var div = document.getElementById("pedido");
+    if (!div) return;
+
+    div.innerHTML = "<b>Pedido:</b><br>" +
+        this.currentRecipe.map(ing => {
+            return this.deliveredIngredients.includes(ing)
+                ? "✔️ " + ing
+                : "⬜ " + ing;
+        }).join("<br>");
+};
+
+LightMapDemoScene.prototype.CheckRecipeComplete = function() {
+    if (this.deliveredIngredients.length !== this.currentRecipe.length) return;
+
+    console.log("LANCHES COMPLETO!");
+
+    // Pontuação
+    this.score += 10;
+    var placar = document.getElementById("placar");
+    if (placar) placar.innerText = "Pontos: " + this.score;
+
+    // Próximo pedido
+    this.currentRecipeIndex++;
+
+    if (this.currentRecipeIndex >= this.recipes.length) {
+        console.log("Todos os pedidos concluídos!");
+        return;
+    }
+
+    this.currentRecipe = [...this.recipes[this.currentRecipeIndex]];
+    this.deliveredIngredients = [];
+
+    this.UpdateOrderUI();
+};
+
+
+
 LightMapDemoScene.prototype.Load = function (cb) {
 	console.log('Loading demo scene');
+
+	this.recipes = [
+    ["PaoBase", "Carne", "Queijo", "PaoTopo"],
+    ["PaoBase", "Salada", "Tomate", "PaoTopo"],
+    ["PaoBase", "Carne", "Salada", "Tomate", "PaoTopo"]
+	];
+
+	this.currentRecipeIndex = 0;
+	this.currentRecipe = [...this.recipes[this.currentRecipeIndex]];
+	this.deliveredIngredients = [];
 
 	var me = this;
 
@@ -57,6 +105,8 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			cb(loadErrors);
 			return;
 		}
+
+
 
 		
 		for (var i = 0; i < loadResults.Models.RoomModel.meshes.length; i++) {
@@ -255,9 +305,9 @@ LightMapDemoScene.prototype.Load = function (cb) {
              var obj = loadResults.OBJModels;
              
              // Registra cada ingrediente com sua cor específica
-             registerStockItem(me.HamburguerMesh, obj.PaoBase, [0.8, 0.5, 0.2, 1], 'Hamburguer');
+             registerStockItem(me.HamburguerMesh, obj.PaoBase, [0.8, 0.5, 0.2, 1], 'PaoBase');
              registerStockItem(me.CarneMesh,      obj.Carne,   [0.38, 0.25, 0.25, 1], 'Carne');
-             registerStockItem(me.PaoBaseMesh,    obj.PaoBase, [0.8, 0.5, 0.2, 1], 'PaoBase');
+            //  registerStockItem(me.PaoBaseMesh,    obj.PaoBase, [0.8, 0.5, 0.2, 1], 'PaoBase');
              registerStockItem(me.PaoTopoMesh,    obj.PaoTopo, [0.8, 0.5, 0.2, 1], 'PaoTopo');
              registerStockItem(me.QueijoMesh,     obj.Queijo,  [0.93, 0.60, 0.04, 1.0], 'Queijo');
              registerStockItem(me.SaladaMesh,     obj.Salada,  [0.63, 0.79, 0.21, 1.0], 'Salada');
@@ -513,7 +563,9 @@ LightMapDemoScene.prototype.Load = function (cb) {
         btnInicio.onclick = function() {
             // Esconde a tela de início
             document.getElementById('TelaDeInicio').style.display = 'none';
-            
+
+
+            document.getElementById('pedido').style.display = 'block';
 			document.getElementById('placar').style.display = 'block';
             document.getElementById('relogio').style.display = 'block';
             // Destrava o jogo
@@ -521,10 +573,17 @@ LightMapDemoScene.prototype.Load = function (cb) {
             
             // Inicia o relógio AGORA (para não contar o tempo que ficou no menu)
             me.startTime = Date.now();
+
+			me.UpdateOrderUI();
             
             console.log("Jogo Iniciado!");
         };
     }
+
+	this.currentRecipe = [...this.recipes[this.currentRecipeIndex]];
+	this.deliveredIngredients = [];
+	this.UpdateOrderUI();
+
 };
 
 LightMapDemoScene.prototype.Unload = function () {
@@ -606,12 +665,43 @@ LightMapDemoScene.prototype.AttemptInteraction = function() {
                 }
 
                 // 2. Limpa a mão do chefe
-                this.chefHandItem = null;
+                // this.chefHandItem = null;
 
                 // 3. Aumenta a pontuação (opcional, mas legal para feedback)
-                this.score += 10;
-                var placarDiv = document.getElementById('placar');
-                if (placarDiv) placarDiv.innerText = "Pontos: " + this.score;
+
+				// Nome do ingrediente SEM _Clone
+				var ingredientName = this.chefHandItem.name.replace("_Clone", "");
+
+				// ✔️ Só aceita se estiver no pedido
+				if (
+					this.currentRecipe.includes(ingredientName) &&
+					!this.deliveredIngredients.includes(ingredientName)
+				) {
+					console.log("Ingrediente correto:", ingredientName);
+					this.deliveredIngredients.push(ingredientName);
+				} else {
+					console.log("Ingrediente errado ou repetido:", ingredientName);
+				}
+
+				// Remove o item da cena
+				var index = this.Meshes.indexOf(this.chefHandItem.mesh);
+				if (index > -1) {
+					this.Meshes.splice(index, 1);
+				}
+
+				// Limpa a mão
+				this.chefHandItem = null;
+
+				// Atualiza HUD e verifica se completou o lanche
+				this.UpdateOrderUI();
+				this.CheckRecipeComplete();
+
+				// Sai para não soltar no chão
+				return;
+
+                // this.score += 10;
+                // var placarDiv = document.getElementById('placar');
+                // if (placarDiv) placarDiv.innerText = "Pontos: " + this.score;
 
                 // Sai da função (não deixa soltar no chão)
                 return;
