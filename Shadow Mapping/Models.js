@@ -1,33 +1,33 @@
 'use strict';
 
-// CLASSE MODEL ATUALIZADA (SUPORTA COR E TEXTURA)
+// CLASSE MODEL ATUALIZADA (HÍBRIDA)
 var Model = function (gl, vertices, indices, normals, param1, param2) {
 	this.vbo = gl.createBuffer(); // Vértices
 	this.ibo = gl.createBuffer(); // Índices
 	this.nbo = gl.createBuffer(); // Normais
-	this.tbo = gl.createBuffer(); // NOVO: Coordenadas de Textura (UVs)
+	this.tbo = gl.createBuffer(); // NOVO: Coordenadas de Textura (Crucial!)
 	this.nPoints = indices.length;
 
 	this.world = mat4.create();
 	
-	// --- LÓGICA INTELIGENTE PARA TEXTURAS ---
+	// --- LÓGICA INTELIGENTE ---
 	var texCoords = null;
 
-	// Caso 1: O objeto antigo (só cor) manda a cor no 'param1'
+	// Se o param1 for uma cor (array de 4 números), é um objeto antigo
 	if (param1 && param1.length === 4 && typeof param1[0] === 'number') {
 		this.color = param1;
 		this.texture = null;
 		this.hasTexture = false;
-		// Cria coordenadas "falsas" (zeros) para o shader não travar
+		// Cria coordenadas "falsas" (zeros) para o shader não reclamar
 		texCoords = new Array((vertices.length / 3) * 2).fill(0);
 	} 
-	// Caso 2: O objeto novo (textura) manda as coordenadas no 'param1' e a imagem no 'param2'
+	// Se não, é um objeto com textura
 	else {
 		texCoords = param1; 
 		
 		if (param2 instanceof WebGLTexture) {
 			this.texture = param2;
-			this.color = vec4.fromValues(1, 1, 1, 1); // Branco para não tingir a textura
+			this.color = vec4.fromValues(1, 1, 1, 1); // Branco
 			this.hasTexture = true;
 		} else {
 			this.texture = null;
@@ -36,48 +36,39 @@ var Model = function (gl, vertices, indices, normals, param1, param2) {
 		}
 	}
 
-	// --- ENVIANDO DADOS PARA A PLACA DE VÍDEO ---
-
-	// Posições
+	// --- ENVIANDO DADOS ---
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-	// Normais
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.nbo);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 
-	// Texturas UVs (O segredo para não dar tela branca)
+	// Buffer de Textura (tbo)
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.tbo);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
 
-	// Índices
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
-	// Limpeza
 	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 };
 
-// --- AS FUNÇÕES ABAIXO NÃO MUDARAM, MAS PRECISAM ESTAR AQUI ---
+// --- MANTENHA AS OUTRAS FUNÇÕES IGUAIS (CreateShaderProgram e Camera) ---
 
 var CreateShaderProgram = function (gl, vsText, fsText) {
 	var vs = gl.createShader(gl.VERTEX_SHADER);
 	gl.shaderSource(vs, vsText);
 	gl.compileShader(vs);
 	if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-		return {
-			error: 'Error compiling vertex shader: ' + gl.getShaderInfoLog(vs)
-		};
+		return { error: 'Error compiling vertex shader: ' + gl.getShaderInfoLog(vs) };
 	}
 
 	var fs = gl.createShader(gl.FRAGMENT_SHADER);
 	gl.shaderSource(fs, fsText);
 	gl.compileShader(fs);
 	if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-		return {
-			error: 'Error compiling fragment shader: ' + gl.getShaderInfoLog(fs)
-		};
+		return { error: 'Error compiling fragment shader: ' + gl.getShaderInfoLog(fs) };
 	}
 
 	var program = gl.createProgram();
@@ -85,16 +76,12 @@ var CreateShaderProgram = function (gl, vsText, fsText) {
 	gl.attachShader(program, fs);
 	gl.linkProgram(program);
 	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-		return {
-			error: 'Error linking program: ' + gl.getProgramInfoLog(program)
-		};
+		return { error: 'Error linking program: ' + gl.getProgramInfoLog(program) };
 	}
 
 	gl.validateProgram(program);
 	if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
-		return {
-			error: 'Error validating program: ' + gl.getProgramInfoLog(program)
-		};
+		return { error: 'Error validating program: ' + gl.getProgramInfoLog(program) };
 	}
 
 	return program;
