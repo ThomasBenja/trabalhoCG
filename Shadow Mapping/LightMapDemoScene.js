@@ -16,7 +16,7 @@ var LightMapDemoScene = function (gl) {
 	this.isGameStarted = false; 
     this.startTime = 0;
 
-	this.gameDuration = 120; // Tempo total em segundos (ex: 60 segundos)
+	this.gameDuration = 300; //em segundos
     this.isGameOver = false;
 };
 
@@ -62,6 +62,20 @@ LightMapDemoScene.prototype.CheckRecipeComplete = function() {
 LightMapDemoScene.prototype.Load = function (cb) {
 	console.log('Loading demo scene');
 
+	// Carrega a música
+	this.bgMusic = new Audio('jazz.mp3'); 
+	this.bgMusic.loop = true; 
+	this.bgMusic.volume = 0.7; 
+
+	var botao = document.getElementById("BotaoInicio");
+    var me = this;
+
+    if (botao) {
+        botao.addEventListener("click", function() {
+            me.bgMusic.play();
+        });
+    }
+
 	this.recipes = [
     ["PaoBase", "Carne", "Queijo", "PaoTopo"],
     ["PaoBase", "Salada", "Tomate", "PaoTopo"],
@@ -73,6 +87,10 @@ LightMapDemoScene.prototype.Load = function (cb) {
 	this.deliveredIngredients = [];
 
 	var me = this;
+
+	//duas cameras
+	this.isFirstPerson = false; 
+    this.cameraTogglePressed = false;
 
 	async.parallel({
 		Models: function (callback) {
@@ -115,7 +133,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 				case 'TableMesh':
 					me.TableMesh = new Model(
 						me.gl, mesh.vertices, [].concat.apply([], mesh.faces),
-						mesh.normals, vec4.fromValues(1, 0, 1, 1)
+						mesh.normals, vec4.fromValues(0.75, 0.75, 0.85, 1.0)
 					);
 					mat4.translate(
 						me.TableMesh.world, me.TableMesh.world,
@@ -135,7 +153,8 @@ LightMapDemoScene.prototype.Load = function (cb) {
 				case 'WallsMesh':
 					me.WallsMesh = new Model(
 						me.gl, mesh.vertices, [].concat.apply([], mesh.faces),
-						mesh.normals, vec4.fromValues(0.3, 0.3, 0.3, 1)
+						//cor das paredes
+						mesh.normals, vec4.fromValues(1.0, 1, 0.82, 1.0)
 					);
 					break;
 			}
@@ -158,13 +177,47 @@ LightMapDemoScene.prototype.Load = function (cb) {
             cubeData.vertices, 
             cubeData.indices, 
             cubeData.normals, 
-            vec4.fromValues(0.6, 0.4, 0.2, 1.0) // Cor Marrom
+            vec4.fromValues(0.75, 0.75, 0.85, 1.0) 
         );
 
 		mat4.translate(me.CounterMesh.world, me.CounterMesh.world, vec3.fromValues(-4.49, 3.5, 0.5));
         mat4.scale(me.CounterMesh.world, me.CounterMesh.world, vec3.fromValues(0.5, 1.5, 0.5));
 
 		
+		me.WindowModel = new TexturedModel(me.gl, 'janela.png'); 
+
+		
+		me.WindowPosition = [0.0, -4.9, 1.75];
+		me.WindowPosition2 = [0.0,  4.9, 1.75];
+
+	
+		me.DoorObject = new DoorModel(me.gl, "porta.png");
+
+		me.DoorPosition = [-4.9, 0.5, 1.4];
+		me.DoorPosition2 = [4.9, 1.6, 1.4];
+
+		me.Pratileira = new PratileiraModel(me.gl,'pratileira.png');
+		me.PratileiraPosition = [-4.8,-2.6,2];
+		me.Pratileira2 = new PratileiraModel(me.gl,'pratileira.png');
+		me.Pratileira2Position = [-4.8,-2.6,0.7];
+
+
+		me.Geladeira = new GeladeiraModel(me.gl,'geladeira.png');
+		me.GeladeiraPosition = [-3.98,3.6,0.1];
+
+		me.Quadro = new QuadroModel(me.gl, 'quadro.png');
+		me.QuadroPosition = [4.8, -0.8, 1.65];
+
+		me.Poster = new PosterModel(me.gl, 'poster.jpg');
+		me.PosterPosition = [4.8, -3.4, 1.7];
+
+		me.Teto = new TetoModel(me.gl, 'teto.png');
+		me.TetoPosition = [0, 0, 2.99];
+
+		me.Piso = new PisoModel(me.gl, 'piso.png');
+		me.PisoPosition = [0, 0, 0.0001];
+
+
 		if (loadResults.OBJModels) {
 			var obj = loadResults.OBJModels;
 			
@@ -277,12 +330,15 @@ LightMapDemoScene.prototype.Load = function (cb) {
 			me.CounterMesh,
 		];
 
+		me.chef = new Chef(me.gl, me.ShadowProgram);
+        me.chef.position = [0, 0, 0]; // Posição inicial
+        me.chef.scale = 1.0;
 		
-		// 1. OBRIGATÓRIO: Inicializar as listas antes de usar!
+		
         me.Interactables = [];
         me.chefHandItem = null;
 
-        // 2. Função auxiliar para registrar itens de estoque
+       
         var registerStockItem = function(mesh, objData, color, name) {
             if (mesh && objData) {
                 // Adiciona o mesh visual na tela
@@ -300,7 +356,6 @@ LightMapDemoScene.prototype.Load = function (cb) {
             }
         };
 
-        // 3. Registrar os itens (apenas se os modelos OBJ carregaram)
         if (loadResults.OBJModels) {
              var obj = loadResults.OBJModels;
              
@@ -314,7 +369,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
              registerStockItem(me.TomateMesh,     obj.Tomate,  [1.0, 0.388, 0.278, 1.0], 'Tomate');
         }
         
-        // Adiciona ingredientes decorativos extras (se existirem)
+        // Adiciona ingredientes extras 
         if (me.CarneMeshIng) me.MeshInges.push(me.CarneMeshIng);
         if (me.PaoBaseMeshIng) me.MeshInges.push(me.PaoBaseMeshIng);
         if (me.PaoTopoMeshIng) me.MeshInges.push(me.PaoTopoMeshIng);
@@ -527,9 +582,9 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		console.log('Chef carregado com sucesso!');
 
 		me.waiter = new waiter(me.gl, me.ShadowProgram);
-		me.waiter.position = [3, 1, 0]; 
+		me.waiter.position = [4, 3, 0]; 
 		me.waiter.scale = 0.75;
-		me.waiter.baseRotation = [0, 0, 0];
+		me.waiter.baseRotation = [0, 0, 90];
 		me.waiter.moveSpeed = 1.5;
 
 		console.log('Garçom carregado com sucesso!');
@@ -570,10 +625,10 @@ LightMapDemoScene.prototype.Load = function (cb) {
             document.getElementById('relogio').style.display = 'block';
             // Destrava o jogo
             me.isGameStarted = true;
+			
             
-            // Inicia o relógio AGORA (para não contar o tempo que ficou no menu)
+            // Inicia o relógio para não contar o tempo que ficou no menu
             me.startTime = Date.now();
-
 			me.UpdateOrderUI();
             
             console.log("Jogo Iniciado!");
@@ -583,6 +638,30 @@ LightMapDemoScene.prototype.Load = function (cb) {
 	this.currentRecipe = [...this.recipes[this.currentRecipeIndex]];
 	this.deliveredIngredients = [];
 	this.UpdateOrderUI();
+
+	// --- LÓGICA DO MENU DE CRÉDITOS ---
+    
+    var btnCreditos = document.getElementById("Creditos");
+    var btnVoltarCred = document.getElementById("BotaoVoltarCreditos");
+    var telaCreditos = document.getElementById("TelaDeCreditos");
+    var telaInicio = document.getElementById("TelaDeInicio");
+	var TelaDeEndGame = document.getElementById("TelaDeEndGame");
+
+    if (btnCreditos) {
+        btnCreditos.addEventListener("click", function() {
+            telaCreditos.style.display = "flex"; 
+            telaInicio.style.display = "none";   
+			TelaDeEndGame.style.display = "none";
+        });
+    }
+
+
+    if (btnVoltarCred) {
+        btnVoltarCred.addEventListener("click", function() {
+            telaCreditos.style.display = "none"; 
+			TelaDeEndGame.style.display = "block";
+        });
+    }
 
 };
 
@@ -646,10 +725,10 @@ LightMapDemoScene.prototype.Begin = function () {
 LightMapDemoScene.prototype.AttemptInteraction = function() {
     var chefPos = vec3.fromValues(this.chef.position[0], this.chef.position[1], this.chef.position[2]);
     
-    // --- 1. SE ESTIVER SEGURANDO UM ITEM ---
+  
     if (this.chefHandItem) {
         
-        // A. Tenta entregar para o GARÇOM primeiro
+      
         if (this.waiter) {
             var waiterPos = vec3.fromValues(this.waiter.position[0], this.waiter.position[1], this.waiter.position[2]);
             var distToWaiter = vec3.distance(chefPos, waiterPos);
@@ -658,18 +737,15 @@ LightMapDemoScene.prototype.AttemptInteraction = function() {
             if (distToWaiter < 2.0) {
                 console.log("Entregou " + this.chefHandItem.name + " para o garçom!");
 
-                // 1. Remove o item da lista de desenho (faz ele SUMIR da tela)
+                //  Remove o item da lista de desenho (faz ele SUMIR da tela)
                 var index = this.Meshes.indexOf(this.chefHandItem.mesh);
                 if (index > -1) {
                     this.Meshes.splice(index, 1);
                 }
 
-                // 2. Limpa a mão do chefe
+                //  Limpa a mão do chefe
                 // this.chefHandItem = null;
 
-                // 3. Aumenta a pontuação (opcional, mas legal para feedback)
-
-				// Nome do ingrediente SEM _Clone
 				var ingredientName = this.chefHandItem.name.replace("_Clone", "");
 
 				// ✔️ Só aceita se estiver no pedido
@@ -708,14 +784,14 @@ LightMapDemoScene.prototype.AttemptInteraction = function() {
             }
         }
 
-        // B. Se não entregou pro garçom, SOLTA NO CHÃO (Lógica antiga)
+        // Se não entregou pro garçom dolta no chao
         console.log("Soltou " + this.chefHandItem.name + " no chão.");
         this.chefHandItem.isHeld = false;
         this.chefHandItem = null;
         return; 
     }
 
-    // --- 2. SE A MÃO ESTIVER VAZIA: TENTA PEGAR DO ESTOQUE ---
+    //SE A MÃO ESTIVER VAZIA TENTA PEGAR DO ESTOQUE
     var pickupRadius = 1.5; 
     var closestDist = 999;
     var stockToUse = null;
@@ -803,12 +879,11 @@ LightMapDemoScene.prototype.RotateIngredient = function (name, axis, angleRadian
 
 
 LightMapDemoScene.prototype._Update = function (dt) {
-	//  SE O JOGO ACABOU, NÃO CALCULE NADA
+	//ve se o jogo acabou pra travar ele
     if (!this.isGameStarted || this.isGameOver) {
-        return; // Sai da função imediatamente. O boneco congela.
+        return; 
     }
 
-    //  VERIFICA O TEMPO
     var now = Date.now();
     var secondsPassed = Math.floor((now - this.startTime) / 1000);
 
@@ -816,35 +891,31 @@ LightMapDemoScene.prototype._Update = function (dt) {
 
 	if (secondsPassed >= this.gameDuration) {
         this.EndGame();
-        return; // Sai da função
+        return; 
     }
 
-	// --- CONFIGURAÇÕES ---
-    var tamanhoDaSala = 4.20;  // Limite horizontal (Paredes)
-    var alturaDosOlhos = 2.0; // Altura fixa do chão (Altura)
+    var tamanhoDaSala = 4.20;  // Limite horizontal 
+    var alturaDosOlhos = 2.0; // Altura fixa do chão 
 
-    // 1. TRAVAR PAREDES LATERAIS (Eixo X - Índice 0)
-    // Se tentar sair pela esquerda...
+    // TRAVAR PAREDES LATERAIS 
     if (this.camera.position[0] < -tamanhoDaSala) {
         this.camera.position[0] = -tamanhoDaSala;
     }
-    // Se tentar sair pela direita...
+    // Se tentar sair pela direita
     if (this.camera.position[0] > tamanhoDaSala) {
         this.camera.position[0] = tamanhoDaSala;
     }
 
-    // 2. TRAVAR PAREDES FUNDO (Eixo Z - Índice 2)
-    // Se tentar sair pelo fundo...
+    //TRAVAR PAREDES FUNDO 
     if (this.camera.position[1] < -tamanhoDaSala) {
         this.camera.position[1] = -tamanhoDaSala;
     }
-    // Se tentar sair pela frente...
+    // Se tentar sair pela frente
     if (this.camera.position[1] > tamanhoDaSala) {
         this.camera.position[1] = tamanhoDaSala;
     }
 
-    // 3. FIXAR A ALTURA (Eixo Y - Índice 1)
-    // Isso garante que você não voe e nem afunde no chão
+    // FIXAR A ALTURA
     this.camera.position[2] = alturaDosOlhos;
 
 
@@ -856,22 +927,7 @@ LightMapDemoScene.prototype._Update = function (dt) {
 		this.camera.moveForward(-dt / 1000 * this.MoveForwardSpeed);
 	}
 
-	/*if (this.PressedKeys.Right && !this.PressedKeys.Left) {
-		this.camera.moveRight(dt / 1000 * this.MoveForwardSpeed);
-	}
-
-	if (this.PressedKeys.Left && !this.PressedKeys.Right) {
-		this.camera.moveRight(-dt / 1000 * this.MoveForwardSpeed);
-	}*/
-
-	/*if (this.PressedKeys.Up && !this.PressedKeys.Down) {
-		this.camera.moveUp(dt / 1000 * this.MoveForwardSpeed);
-	}
-
-	if (this.PressedKeys.Down && !this.PressedKeys.Up) {
-		this.camera.moveUp(-dt / 1000 * this.MoveForwardSpeed);
-	}*/
-
+	
 	if (this.PressedKeys.RotRight && !this.PressedKeys.RotLeft) {
 		this.camera.rotateRight(-dt / 1000 * this.RotateSpeed);
 	}
@@ -880,8 +936,43 @@ LightMapDemoScene.prototype._Update = function (dt) {
 		this.camera.rotateRight(dt / 1000 * this.RotateSpeed);
 	}
 
-	
-	this.camera.GetViewMatrix(this.viewMatrix);
+    
+    if (this.isFirstPerson && this.chef) {
+        
+        var p = this.chef.position; 
+        var angle = this.chef.rotation;
+
+        var eyeHeight = 1.7; 
+        var frontOffset = 0.1; 
+        var lookDist = 10.0;   
+
+        // direção calculada igual ao movimento do chef
+        var dirX = -Math.sin(angle);
+        var dirY = Math.cos(angle);
+        
+		//posicao camera
+        var eyeX = p[0] + (dirX * frontOffset);
+        var eyeY = p[1] + (dirY * frontOffset);
+        var eyeZ = p[2] + eyeHeight; 
+
+        var eye = vec3.fromValues(eyeX, eyeY, eyeZ);
+
+        var centerX = eyeX + (dirX * lookDist);
+        var centerY = eyeY + (dirY * lookDist);
+        var centerZ = eyeZ; 
+
+        var center = vec3.fromValues(centerX, centerY, centerZ);
+
+    
+        var up = vec3.fromValues(0, 0, 1); 
+
+        // Aplica a câmera
+        mat4.lookAt(this.viewMatrix, eye, center, up);
+
+    } else {
+        // Câmera normal
+        this.camera.GetViewMatrix(this.viewMatrix);
+    }
 
 	if (this.chef) {
     this.chefKeys['w'] = this.PressedKeys.ChefForward || false;
@@ -901,12 +992,19 @@ LightMapDemoScene.prototype._Update = function (dt) {
 		this.waiter.update(dt / 1000, this.waiterKeys);
 	}
 
-
-	// --- ATUALIZAÇÃO DOS ITENS SEGURADOS ---
-    // --- ATUALIZAÇÃO DOS ITENS SEGURADOS ---
+	if (this.chefKeys['C'] || this.chefKeys['c']) { 
+        if (!this.cameraTogglePressed) {
+            this.isFirstPerson = !this.isFirstPerson; 
+            this.cameraTogglePressed = true; 
+        }
+    } else {
+        this.cameraTogglePressed = false; 
+    }
+	
+	//ATUALIZAÇÃO DOS ITENS SEGURADOS
     if (this.chefHandItem) {
         var item = this.chefHandItem;
-        var mesh = item.mesh; // Este é o clone, não o da mesa!
+        var mesh = item.mesh;
 
         mat4.identity(mesh.world);
 
@@ -926,6 +1024,7 @@ LightMapDemoScene.prototype._Update = function (dt) {
         // Escala
         mat4.scale(mesh.world, mesh.world, item.originalScale);
     }
+
 };
 
 
@@ -1080,6 +1179,10 @@ LightMapDemoScene.prototype._Render = function () {
 	gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.shadowMapCube);
 
 	
+	this.gl.enable(this.gl.BLEND);
+	// 2. Define como a transparência funciona (usa o Alpha da imagem)
+	this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+
 	for (var i = 0; i < this.Meshes.length; i++) {
 		
 		gl.uniformMatrix4fv(
@@ -1169,6 +1272,147 @@ LightMapDemoScene.prototype._Render = function () {
 			gl.drawElements(gl.TRIANGLES, this.waiter.indexCount, gl.UNSIGNED_SHORT, 0);
 		});
 	}
+
+
+	if (this.WindowModel) {
+
+
+		var winModelMat = mat4.create();
+
+		mat4.translate(winModelMat, winModelMat, this.WindowPosition);
+
+
+		mat4.scale(winModelMat, winModelMat, [1.8, 0.5, 1]); 
+
+		this.gl.disable(this.gl.CULL_FACE);
+
+		this.WindowModel.draw(this.viewMatrix, this.projMatrix, winModelMat);
+
+		this.gl.enable(this.gl.CULL_FACE);
+
+		var winMat2 = mat4.create();
+	
+		mat4.translate(winMat2, winMat2, this.WindowPosition2); 
+	
+		mat4.scale(winMat2, winMat2, [1.8, 0.5, 1]); 
+		this.gl.disable(this.gl.CULL_FACE);
+		this.WindowModel.draw(this.viewMatrix, this.projMatrix, winMat2);
+		this.gl.enable(this.gl.CULL_FACE);
+	}
+
+	if (this.DoorObject) {
+
+    	var doorMat = mat4.create();
+
+ 
+    	mat4.translate(doorMat, doorMat, this.DoorPosition);
+
+    	mat4.scale(doorMat, doorMat, [1.5, 2, 1.5]); 
+
+   
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.DoorObject.draw(this.viewMatrix, this.projMatrix, doorMat);
+    	this.gl.enable(this.gl.CULL_FACE);
+
+		var doorMat2 = mat4.create();
+
+ 
+    	mat4.translate(doorMat2, doorMat2, this.DoorPosition2);
+
+    	mat4.scale(doorMat2, doorMat2, [1.5, 2, 1.5]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.DoorObject.draw(this.viewMatrix, this.projMatrix, doorMat2);
+    	this.gl.enable(this.gl.CULL_FACE);
+	}
+
+	if (this.Pratileira) {
+
+    	var Pratileira = mat4.create();
+
+    	mat4.translate(Pratileira, Pratileira, this.PratileiraPosition);
+
+    	mat4.scale(Pratileira, Pratileira, [2.5, 1.7, 0.7]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.Pratileira.draw(this.viewMatrix, this.projMatrix, Pratileira);
+    	this.gl.enable(this.gl.CULL_FACE);
+
+		var Pratileira2 = mat4.create();
+
+    	mat4.translate(Pratileira2, Pratileira2, this.Pratileira2Position);
+
+    	mat4.scale(Pratileira2, Pratileira2, [2.5, 1.7, 0.7]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.Pratileira2.draw(this.viewMatrix, this.projMatrix, Pratileira2);
+    	this.gl.enable(this.gl.CULL_FACE);
+	}
+
+	if (this.Geladeira) {
+
+    	var Geladeira = mat4.create();
+
+    	mat4.translate(Geladeira, Geladeira, this.GeladeiraPosition);
+
+    	mat4.scale(Geladeira, Geladeira, [1.25, 1.85, 3.8]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.Geladeira.draw(this.viewMatrix, this.projMatrix, Geladeira);
+    	this.gl.enable(this.gl.CULL_FACE);
+	}
+
+	if (this.Quadro) {
+
+    	var Quadro = mat4.create();
+
+    	mat4.translate(Quadro, Quadro, this.QuadroPosition);
+
+    	mat4.scale(Quadro, Quadro, [1.3, 1.3, 1.3]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.Quadro.draw(this.viewMatrix, this.projMatrix, Quadro);
+    	this.gl.enable(this.gl.CULL_FACE);
+	}
+
+	if (this.Poster) {
+
+    	var Poster = mat4.create();
+
+    	mat4.translate(Poster, Poster, this.PosterPosition);
+
+    	mat4.scale(Poster, Poster, [0.7, -0.7, 0.7]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.Poster.draw(this.viewMatrix, this.projMatrix, Poster);
+    	this.gl.enable(this.gl.CULL_FACE);
+	}
+
+	if (this.Teto) {
+
+    	var Teto = mat4.create();
+
+    	mat4.translate(Teto, Teto, this.TetoPosition);
+
+    	mat4.scale(Teto, Teto, [5, 5, 5]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.Teto.draw(this.viewMatrix, this.projMatrix, Teto);
+    	this.gl.enable(this.gl.CULL_FACE);
+	}
+
+	if (this.Piso) {
+
+    	var Piso = mat4.create();
+
+    	mat4.translate(Piso, Piso, this.PisoPosition);
+
+    	mat4.scale(Piso, Piso, [5.5, 5.5, 5.5]); 
+
+    	this.gl.disable(this.gl.CULL_FACE);
+    	this.Piso.draw(this.viewMatrix, this.projMatrix, Piso);
+    	this.gl.enable(this.gl.CULL_FACE);
+	}
 };
 
 
@@ -1208,11 +1452,14 @@ LightMapDemoScene.prototype._OnKeyDown = function (e) {
 		case 'KeyS':
 			this.PressedKeys.ChefBack = true;
 			break;
+		case 'KeyC': 
+            this.chefKeys['C'] = true; 
+            break;
 		case 'ArrowUp':
-    	this.PressedKeys.Forward = true; // AGORA VAI PRA FRENTE (X/Z)
+    	this.PressedKeys.Forward = true; 
     	break;
 		case 'ArrowDown':
-    	this.PressedKeys.Back = true;    // AGORA VAI PRA TRÁS (X/Z)
+    	this.PressedKeys.Back = true;    
     	break;
 		case 'ArrowRight':
 			this.PressedKeys.RotRight = true;
@@ -1260,6 +1507,9 @@ LightMapDemoScene.prototype._OnKeyUp = function (e) {
 		case 'KeyS':
 			this.PressedKeys.ChefBack = false;
 			break;
+		case 'KeyC': 
+            this.chefKeys['C'] = false; 
+            break;
 		case 'ArrowUp':
 			this.PressedKeys.Forward = false;
 			break;
@@ -1305,7 +1555,6 @@ LightMapDemoScene.prototype.EndGame = function() {
     }
   };
 
-// Função que atualiza o relógio na tela
 LightMapDemoScene.prototype.UpdateTimerDisplay = function() {
     var timerDiv = document.getElementById('relogio');
     if (!timerDiv) return;
@@ -1313,12 +1562,11 @@ LightMapDemoScene.prototype.UpdateTimerDisplay = function() {
     // Calcula quantos segundos passaram desde o início
     var now = Date.now();
     var diff = Math.floor((now - this.startTime) / 1000);
+	var cronometro = this.gameDuration - diff;
 
-    // Matemática simples para separar minutos e segundos
-    var minutes = Math.floor(diff / 60);
-    var seconds = diff % 60;
+    var minutes = Math.floor(cronometro / 60);
+    var seconds = cronometro % 60;
 
-    // Adiciona o zero na frente se for menor que 10 (ex: "05")
     var minStr = minutes < 10 ? "0" + minutes : minutes;
     var secStr = seconds < 10 ? "0" + seconds : seconds;
 
@@ -1361,3 +1609,774 @@ function GetCubeData() {
 	};
 }
 
+// INÍCIO DO CÓDIGO DE TEXTURA
+
+//Shaders para textura 
+var texVS = `
+attribute vec3 a_Position;
+attribute vec2 a_TexCoord;
+uniform mat4 u_WorldViewProjection;
+varying vec2 v_TexCoord;
+void main() {
+    gl_Position = u_WorldViewProjection * vec4(a_Position, 1.0);
+    v_TexCoord = a_TexCoord;
+}`;
+
+var texFS = `
+precision mediump float;
+varying vec2 v_TexCoord;
+uniform sampler2D u_Sampler;
+void main() {
+    gl_FragColor = texture2D(u_Sampler, v_TexCoord);
+}`;
+
+// Classe Especializada para Modelos com Textura
+function TexturedModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+    
+    // Compilar Shaders
+    var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS);
+    gl.compileShader(vShader);
+    
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS);
+    gl.compileShader(fShader);
+    
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+    // Carregar Imagem
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        _this.texture = texture;
+    };
+    image.src = imagePath;
+
+
+var vertices = new Float32Array([
+    // X (Varia)    Y (ZERO/Fixo)    Z (Altura)       U, V
+    
+    // 1. Esquerda - Baixo
+    -1.0,           0.0,            -1.0,             0.0, 0.0,
+    
+    // 2. Direita - Baixo
+     1.0,           0.0,            -1.0,             1.0, 0.0,
+    
+    // 3. Direita - Cima
+     1.0,           0.0,             1.0,             1.0, 1.0,
+    
+    // 4. Esquerda - Cima
+    -1.0,           0.0,             1.0,             0.0, 1.0
+]);
+
+    var indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    
+    this.indexCount = indices.length;
+}
+
+TexturedModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return; 
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+    
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+    gl.enableVertexAttribArray(a_Pos);
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+    gl.enableVertexAttribArray(a_Tex);
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    gl.uniform1i(u_Sampler, 0);
+
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_SHORT, 0);
+};
+
+function DoorModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+
+	var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS); 
+    gl.compileShader(vShader);
+
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS);
+    gl.compileShader(fShader);
+
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+    var vertices = new Float32Array([
+        // X      Y      Z        U    V
+        0.0,   -1.0,   -1.0,     0.0, 0.0, 
+        0.0,    1.0,   -1.0,     1.0, 0.0, 
+        0.0,    1.0,    1.0,     1.0, 1.0, 
+        0.0,   -1.0,    1.0,     0.0, 1.0  
+    ]);
+
+    var indices = new Uint8Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    this.indexCount = indices.length;
+
+
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        
+        _this.texture = texture; 
+    };
+    image.src = imagePath; 
+};
+
+
+DoorModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return; 
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+    
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    if (a_Pos >= 0) {
+        gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+        gl.enableVertexAttribArray(a_Pos);
+    }
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    if (a_Tex >= 0) {
+        gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+        gl.enableVertexAttribArray(a_Tex);
+    }
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    if (u_MVP) gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    if (u_Sampler) gl.uniform1i(u_Sampler, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_BYTE, 0);
+};
+
+
+
+function PratileiraModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+
+    var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS); 
+    gl.compileShader(vShader);
+
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS); 
+    gl.compileShader(fShader);
+
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+	var vertices = new Float32Array([
+        // X      Y      Z        U    V
+        0.0,   -1.0,   -1.0,     0.0, 0.0,
+        0.0,    1.0,   -1.0,     1.0, 0.0, 
+        0.0,    1.0,    1.0,     1.0, 1.0, 
+        0.0,   -1.0,    1.0,     0.0, 1.0  
+    ]);
+
+    var indices = new Uint8Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    this.indexCount = indices.length;
+
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        _this.texture = texture;
+    };
+    image.src = imagePath;
+};
+
+PratileiraModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return; 
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+   
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    if(a_Pos >= 0) {
+        gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+        gl.enableVertexAttribArray(a_Pos);
+    }
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    if(a_Tex >= 0) {
+        gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+        gl.enableVertexAttribArray(a_Tex);
+    }
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    if (u_MVP) gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    if (u_Sampler) gl.uniform1i(u_Sampler, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_BYTE, 0);
+};
+
+
+function QuadroModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+
+
+
+    var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS); 
+    gl.compileShader(vShader);
+
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS); 
+    gl.compileShader(fShader);
+
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+
+	var vertices = new Float32Array([
+        // X      Y      Z        U    V
+        0.0,   -1.0,   -1.0,     0.0, 0.0, 
+        0.0,    1.0,   -1.0,     1.0, 0.0, 
+        0.0,    1.0,    1.0,     1.0, 1.0, 
+        0.0,   -1.0,    1.0,     0.0, 1.0  
+    ]);
+
+    var indices = new Uint8Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    this.indexCount = indices.length;
+
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        _this.texture = texture;
+    };
+    image.src = imagePath;
+};
+
+QuadroModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return; 
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+    
+
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    if(a_Pos >= 0) {
+        gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+        gl.enableVertexAttribArray(a_Pos);
+    }
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    if(a_Tex >= 0) {
+        gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+        gl.enableVertexAttribArray(a_Tex);
+    }
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    if (u_MVP) gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    if (u_Sampler) gl.uniform1i(u_Sampler, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_BYTE, 0);
+};
+
+function TetoModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+
+
+    var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS);
+    gl.compileShader(vShader);
+
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS);
+    gl.compileShader(fShader);
+
+
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+
+	var vertices = new Float32Array([
+        // X      Y      Z        U    V
+        -1.0,   -1.0,   0,     0.0, 0.0, 
+        -1.0,    1.0,   0,     1.0, 0.0, 
+        1.0,    1.0,    0,     1.0, 1.0, 
+        1.0,   -1.0,    0,     0.0, 1.0  
+    ]);
+
+    var indices = new Uint8Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    this.indexCount = indices.length;
+
+  
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        _this.texture = texture;
+    };
+    image.src = imagePath;
+};
+
+
+TetoModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return; 
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    if(a_Pos >= 0) {
+        gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+        gl.enableVertexAttribArray(a_Pos);
+    }
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    if(a_Tex >= 0) {
+        gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+        gl.enableVertexAttribArray(a_Tex);
+    }
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    if (u_MVP) gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    if (u_Sampler) gl.uniform1i(u_Sampler, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_BYTE, 0);
+};
+
+function PisoModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+
+
+    var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS); 
+    gl.compileShader(vShader);
+
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS); 
+    gl.compileShader(fShader);
+
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+
+
+	var vertices = new Float32Array([
+        // X      Y      Z        U    V
+        -1.0,   -1.0,   0,     0.0, 0.0, 
+        -1.0,    1.0,   0,     1.0, 0.0, 
+        1.0,    1.0,    0,     1.0, 1.0, 
+        1.0,   -1.0,    0,     0.0, 1.0  
+    ]);
+
+    var indices = new Uint8Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    this.indexCount = indices.length;
+
+
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        _this.texture = texture;
+    };
+    image.src = imagePath;
+};
+
+
+PisoModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return;
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    if(a_Pos >= 0) {
+        gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+        gl.enableVertexAttribArray(a_Pos);
+    }
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    if(a_Tex >= 0) {
+        gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+        gl.enableVertexAttribArray(a_Tex);
+    }
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    if (u_MVP) gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    if (u_Sampler) gl.uniform1i(u_Sampler, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_BYTE, 0);
+};
+
+function PosterModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+
+    var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS); 
+    gl.compileShader(vShader);
+
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS);
+    gl.compileShader(fShader);
+
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+
+
+	var vertices = new Float32Array([
+        // X      Y      Z        U    V
+        0.0,   -1.0,   -1.0,     0.0, 0.0, 
+        0.0,    1.0,   -1.0,     1.0, 0.0, 
+        0.0,    1.0,    1.0,     1.0, 1.0, 
+        0.0,   -1.0,    1.0,     0.0, 1.0  
+    ]);
+
+    var indices = new Uint8Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    this.indexCount = indices.length;
+
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        _this.texture = texture;
+    };
+    image.src = imagePath;
+};
+
+
+PosterModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return; 
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+    
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    if(a_Pos >= 0) {
+        gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+        gl.enableVertexAttribArray(a_Pos);
+    }
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    if(a_Tex >= 0) {
+        gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+        gl.enableVertexAttribArray(a_Tex);
+    }
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    if (u_MVP) gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    if (u_Sampler) gl.uniform1i(u_Sampler, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_BYTE, 0);
+};
+
+function GeladeiraModel(gl, imagePath) {
+    this.gl = gl;
+    this.texture = null;
+
+
+    var vShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vShader, texVS); 
+    gl.compileShader(vShader);
+
+    var fShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fShader, texFS); 
+    gl.compileShader(fShader);
+
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vShader);
+    gl.attachShader(this.program, fShader);
+    gl.linkProgram(this.program);
+
+
+
+	var vertices = new Float32Array([
+        // X      Y      Z        U    V
+        0.0,   -1.0,   -1.0,     0.0, 0.0,
+        0.0,    1.0,   -1.0,     1.0, 0.0, 
+        0.0,    1.0,    1.0,     1.0, 1.0, 
+        0.0,   -1.0,    1.0,     0.0, 1.0  
+    ]);
+
+    var indices = new Uint8Array([0, 1, 2, 0, 2, 3]);
+
+    this.vBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    this.iBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    this.indexCount = indices.length;
+
+  
+    var texture = gl.createTexture();
+    var image = new Image();
+    var _this = this;
+    
+    image.onload = function() {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        _this.texture = texture;
+    };
+    image.src = imagePath;
+};
+
+
+GeladeiraModel.prototype.draw = function(viewMatrix, projMatrix, modelMatrix) {
+    if (!this.texture) return; 
+
+    var gl = this.gl;
+    gl.useProgram(this.program);
+
+    var mvp = mat4.create();
+    mat4.multiply(mvp, projMatrix, viewMatrix);
+    mat4.multiply(mvp, mvp, modelMatrix);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+    
+    var a_Pos = gl.getAttribLocation(this.program, "a_Position");
+    if(a_Pos >= 0) {
+        gl.vertexAttribPointer(a_Pos, 3, gl.FLOAT, false, FSIZE * 5, 0);
+        gl.enableVertexAttribArray(a_Pos);
+    }
+
+    var a_Tex = gl.getAttribLocation(this.program, "a_TexCoord");
+    if(a_Tex >= 0) {
+        gl.vertexAttribPointer(a_Tex, 2, gl.FLOAT, false, FSIZE * 5, FSIZE * 3);
+        gl.enableVertexAttribArray(a_Tex);
+    }
+
+    var u_MVP = gl.getUniformLocation(this.program, "u_WorldViewProjection");
+    if (u_MVP) gl.uniformMatrix4fv(u_MVP, false, mvp);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    var u_Sampler = gl.getUniformLocation(this.program, "u_Sampler");
+    if (u_Sampler) gl.uniform1i(u_Sampler, 0);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+    gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_BYTE, 0);
+};
