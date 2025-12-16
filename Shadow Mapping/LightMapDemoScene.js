@@ -221,7 +221,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		if (loadResults.OBJModels) {
 			var obj = loadResults.OBJModels;
 			
-			// Hambúrguer
+			// Base do Pão
 			if (obj.PaoBase) {
 				me.HamburguerMesh = new Model(
 					me.gl,
@@ -234,95 +234,42 @@ LightMapDemoScene.prototype.Load = function (cb) {
 				mat4.rotate(me.HamburguerMesh.world, me.HamburguerMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.HamburguerMesh.world, me.HamburguerMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
-			// if (obj.PaoBase) {
-			// 	me.HamburguerMeshIng = new Model(
-			// 		me.gl,
-			// 		obj.PaoBase.vertices,
-			// 		obj.PaoBase.indices,
-			// 		obj.PaoBase.normals,
-			// 		vec4.fromValues(0.8, 0.5, 0.2, 1)
-			// 	);
-			// 	mat4.translate(me.HamburguerMeshIng.world, me.HamburguerMeshIng.world, vec3.fromValues(3, -1.5, 1.15));
-			// 	mat4.rotate(me.HamburguerMeshIng.world, me.HamburguerMeshIng.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
-			// 	mat4.scale(me.HamburguerMeshIng.world, me.HamburguerMeshIng.world, vec3.fromValues(0.15, 0.1, 0.15));
-			// }
-			// if(obj.Salada) {
-			// 	me.SaladaMesh = new Model(me.gl, obj.Salada.vertices, obj.Salada.indices, obj.Salada.normals, vec4.fromValues(0.63, 0.79, 0.21, 1.0));
-			// 	mat4.translate(me.SaladaMesh.world, me.SaladaMesh.world, vec3.fromValues(3, -1, 1.15));
-			// 	mat4.rotate(me.SaladaMesh.world, me.SaladaMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
-			// 	mat4.scale(me.SaladaMesh.world, me.SaladaMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
-			// }
-			// if(obj.Carne) {
-			// 	me.CarneMesh = new Model(me.gl, obj.Carne.vertices, obj.Carne.indices, obj.Carne.normals, vec4.fromValues(0.38, 0.25, 0.25, 1));
-			// 	mat4.translate(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(3, -1, 1.15));
-			// 	mat4.rotate(me.CarneMesh.world, me.CarneMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
-			// 	mat4.scale(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
-			// }
-			// if(obj.Queijo) {
-			// 	me.QueijoMesh = new Model(me.gl, obj.Queijo.vertices, obj.Queijo.indices, obj.Queijo.normals, vec4.fromValues(0.93, 0.60, 0.04, 1.0));
-			// 	mat4.translate(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(3, -1, 1.15));
-			// 	mat4.rotate(me.QueijoMesh.world, me.QueijoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
-			// 	mat4.scale(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
-			// }
-			// if(obj.Tomate) {
-			// 	me.TomateMesh = new Model(me.gl, obj.Tomate.vertices, obj.Tomate.indices, obj.Tomate.normals, vec4.fromValues(1.0, 0.388, 0.278, 1.0));
-			// 	mat4.translate(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(3, -1, 1.13));
-			// 	mat4.rotate(me.TomateMesh.world, me.TomateMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
-			// 	mat4.scale(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
-			// }		
-			// if(obj.PaoTopo) {
-			// 	me.PaoTopoMesh = new Model(me.gl, obj.PaoTopo.vertices, obj.PaoTopo.indices, obj.PaoTopo.normals, vec4.fromValues(0.8, 0.5, 0.2, 1));
-			// 	mat4.translate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(3, -1, 1.09));
-			// 	mat4.rotate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
-			// 	mat4.scale(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
-			// }
-		// if (obj.PaoBase) {
-		// 		me.HamburguerMeshIng = new Model(
-		// 			me.gl,
-		// 			obj.PaoBase.vertices,
-		// 			obj.PaoBase.indices,
-		// 			obj.PaoBase.normals,
-		// 			vec4.fromValues(0.8, 0.5, 0.2, 1)
-		// 		);
-		// 		mat4.translate(me.HamburguerMeshIng.world, me.HamburguerMeshIng.world, vec3.fromValues(3, -1.5, 1.15));
-		// 		mat4.rotate(me.HamburguerMeshIng.world, me.HamburguerMeshIng.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
-		// 		mat4.scale(me.HamburguerMeshIng.world, me.HamburguerMeshIng.world, vec3.fromValues(0.15, 0.1, 0.15));
-		// 	}
+			// Salada
 			if(obj.Salada) {
 				me.SaladaMesh = new Model(me.gl, obj.Salada.vertices, obj.Salada.indices, obj.Salada.normals, vec4.fromValues(0.63, 0.79, 0.21, 1.0));
 				mat4.translate(me.SaladaMesh.world, me.SaladaMesh.world, vec3.fromValues(3, -1.5, 1.15));
 				mat4.rotate(me.SaladaMesh.world, me.SaladaMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.SaladaMesh.world, me.SaladaMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
+			// Carne do Hamburguer
 			if(obj.Carne) {
 				me.CarneMesh = new Model(me.gl, obj.Carne.vertices, obj.Carne.indices, obj.Carne.normals, vec4.fromValues(0.38, 0.25, 0.25, 1));
 				mat4.translate(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(3, -0.1, 1.15));
 				mat4.rotate(me.CarneMesh.world, me.CarneMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.CarneMesh.world, me.CarneMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
+			// Queijo Mussarela
 			if(obj.Queijo) {
 				me.QueijoMesh = new Model(me.gl, obj.Queijo.vertices, obj.Queijo.indices, obj.Queijo.normals, vec4.fromValues(0.93, 0.60, 0.04, 1.0));
 				mat4.translate(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(-4.3, 2.8, 0.97));
 				mat4.rotate(me.QueijoMesh.world, me.QueijoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.QueijoMesh.world, me.QueijoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
+			// Tomate
 			if(obj.Tomate) {
 				me.TomateMesh = new Model(me.gl, obj.Tomate.vertices, obj.Tomate.indices, obj.Tomate.normals, vec4.fromValues(1.0, 0.388, 0.278, 1.0));
 				mat4.translate(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(-4.3, 3.5, 0.9));
 				mat4.rotate(me.TomateMesh.world, me.TomateMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.TomateMesh.world, me.TomateMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
-			}		
+			}
+			// Tampa do pão
 			if(obj.PaoTopo) {
 				me.PaoTopoMesh = new Model(me.gl, obj.PaoTopo.vertices, obj.PaoTopo.indices, obj.PaoTopo.normals, vec4.fromValues(0.8, 0.5, 0.2, 1));
 				mat4.translate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(-4.3, 4, 0.9));
 				mat4.rotate(me.PaoTopoMesh.world, me.PaoTopoMesh.world, Math.PI/2, vec3.fromValues(1, 0, 0)); // Rotação em Z: 0 graus
 				mat4.scale(me.PaoTopoMesh.world, me.PaoTopoMesh.world, vec3.fromValues(0.15, 0.1, 0.15));
 			}
-	
-
-
 		}
-		
 		me.Meshes = [
 			me.TableMesh,
 			me.LightMesh,
@@ -359,17 +306,15 @@ LightMapDemoScene.prototype.Load = function (cb) {
         if (loadResults.OBJModels) {
              var obj = loadResults.OBJModels;
              
-             // Registra cada ingrediente com sua cor específica
              registerStockItem(me.HamburguerMesh, obj.PaoBase, [0.8, 0.5, 0.2, 1], 'PaoBase');
              registerStockItem(me.CarneMesh,      obj.Carne,   [0.38, 0.25, 0.25, 1], 'Carne');
-            //  registerStockItem(me.PaoBaseMesh,    obj.PaoBase, [0.8, 0.5, 0.2, 1], 'PaoBase');
              registerStockItem(me.PaoTopoMesh,    obj.PaoTopo, [0.8, 0.5, 0.2, 1], 'PaoTopo');
              registerStockItem(me.QueijoMesh,     obj.Queijo,  [0.93, 0.60, 0.04, 1.0], 'Queijo');
              registerStockItem(me.SaladaMesh,     obj.Salada,  [0.63, 0.79, 0.21, 1.0], 'Salada');
              registerStockItem(me.TomateMesh,     obj.Tomate,  [1.0, 0.388, 0.278, 1.0], 'Tomate');
         }
         
-        // Adiciona ingredientes extras 
+        // Mesh dos ingredientes
         if (me.CarneMeshIng) me.MeshInges.push(me.CarneMeshIng);
         if (me.PaoBaseMeshIng) me.MeshInges.push(me.PaoBaseMeshIng);
         if (me.PaoTopoMeshIng) me.MeshInges.push(me.PaoTopoMeshIng);
@@ -495,9 +440,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 		me.gl.bindRenderbuffer(me.gl.RENDERBUFFER, null);
 		me.gl.bindFramebuffer(me.gl.FRAMEBUFFER, null);
 
-		//
 		// Valores Lógicos
-		//
 		me.camera = new Camera(
 			vec3.fromValues(0, 0, 1.85),
 			vec3.fromValues(-0.3, -1, 1.85),
@@ -639,7 +582,7 @@ LightMapDemoScene.prototype.Load = function (cb) {
 	this.deliveredIngredients = [];
 	this.UpdateOrderUI();
 
-	// --- LÓGICA DO MENU DE CRÉDITOS ---
+	// Logica do menu de creditos
     
     var btnCreditos = document.getElementById("Creditos");
     var btnVoltarCred = document.getElementById("BotaoVoltarCreditos");
@@ -744,7 +687,6 @@ LightMapDemoScene.prototype.AttemptInteraction = function() {
                 }
 
                 //  Limpa a mão do chefe
-                // this.chefHandItem = null;
 
 				var ingredientName = this.chefHandItem.name.replace("_Clone", "");
 
@@ -775,16 +717,13 @@ LightMapDemoScene.prototype.AttemptInteraction = function() {
 				// Sai para não soltar no chão
 				return;
 
-                // this.score += 10;
-                // var placarDiv = document.getElementById('placar');
-                // if (placarDiv) placarDiv.innerText = "Pontos: " + this.score;
 
                 // Sai da função (não deixa soltar no chão)
                 return;
             }
         }
 
-        // Se não entregou pro garçom dolta no chao
+        // Se não entregou pro garçom dropa no chao
         console.log("Soltou " + this.chefHandItem.name + " no chão.");
         this.chefHandItem.isHeld = false;
         this.chefHandItem = null;
@@ -1001,7 +940,7 @@ LightMapDemoScene.prototype._Update = function (dt) {
         this.cameraTogglePressed = false; 
     }
 	
-	//ATUALIZAÇÃO DOS ITENS SEGURADOS
+	//Atualizacao dos itens segurados
     if (this.chefHandItem) {
         var item = this.chefHandItem;
         var mesh = item.mesh;
@@ -1609,7 +1548,7 @@ function GetCubeData() {
 	};
 }
 
-// INÍCIO DO CÓDIGO DE TEXTURA
+// codigo de textura
 
 //Shaders para textura 
 var texVS = `
