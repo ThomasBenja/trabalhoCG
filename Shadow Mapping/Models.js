@@ -22,7 +22,7 @@ var Model = function (gl, vertices, indices, normals, param1, param2) {
 		
 		if (param2 instanceof WebGLTexture) {
 			this.texture = param2;
-			this.color = vec4.fromValues(1, 1, 1, 1); /
+			this.color = vec4.fromValues(1, 1, 1, 1); 
 			this.hasTexture = true;
 		} else {
 			this.texture = null;
