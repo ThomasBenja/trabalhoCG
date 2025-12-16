@@ -6,11 +6,8 @@ uniform samplerCube lightShadowMap;
 uniform vec2 shadowClipNearFar;
 uniform float bias;
 
-// Removemos os uniforms de textura (uSampler, uHasTexture)
-
 varying vec3 fPos;
 varying vec3 fNorm;
-// Removemos o varying de textura
 
 void main()
 {

@@ -1119,7 +1119,7 @@ LightMapDemoScene.prototype._Render = function () {
 
 	
 	this.gl.enable(this.gl.BLEND);
-	// 2. Define como a transparência funciona (usa o Alpha da imagem)
+	// Define como a transparência funciona (usa o Alpha da imagem)
 	this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
 	for (var i = 0; i < this.Meshes.length; i++) {

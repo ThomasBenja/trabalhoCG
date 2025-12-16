@@ -1,33 +1,28 @@
 'use strict';
 
-// CLASSE MODEL ATUALIZADA (HÍBRIDA)
 var Model = function (gl, vertices, indices, normals, param1, param2) {
 	this.vbo = gl.createBuffer(); // Vértices
 	this.ibo = gl.createBuffer(); // Índices
 	this.nbo = gl.createBuffer(); // Normais
-	this.tbo = gl.createBuffer(); // NOVO: Coordenadas de Textura (Crucial!)
+	this.tbo = gl.createBuffer(); // Coordenadas de Textura 
 	this.nPoints = indices.length;
 
 	this.world = mat4.create();
 	
-	// --- LÓGICA INTELIGENTE ---
 	var texCoords = null;
 
-	// Se o param1 for uma cor (array de 4 números), é um objeto antigo
 	if (param1 && param1.length === 4 && typeof param1[0] === 'number') {
 		this.color = param1;
 		this.texture = null;
 		this.hasTexture = false;
-		// Cria coordenadas "falsas" (zeros) para o shader não reclamar
 		texCoords = new Array((vertices.length / 3) * 2).fill(0);
 	} 
-	// Se não, é um objeto com textura
 	else {
 		texCoords = param1; 
 		
 		if (param2 instanceof WebGLTexture) {
 			this.texture = param2;
-			this.color = vec4.fromValues(1, 1, 1, 1); // Branco
+			this.color = vec4.fromValues(1, 1, 1, 1); /
 			this.hasTexture = true;
 		} else {
 			this.texture = null;
@@ -36,7 +31,6 @@ var Model = function (gl, vertices, indices, normals, param1, param2) {
 		}
 	}
 
-	// --- ENVIANDO DADOS ---
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
@@ -53,8 +47,6 @@ var Model = function (gl, vertices, indices, normals, param1, param2) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 };
-
-// --- MANTENHA AS OUTRAS FUNÇÕES IGUAIS (CreateShaderProgram e Camera) ---
 
 var CreateShaderProgram = function (gl, vsText, fsText) {
 	var vs = gl.createShader(gl.VERTEX_SHADER);

@@ -89,34 +89,25 @@ class Chef {
       const moveDirX = -Math.sin(this.rotation);
       const moveDirY = Math.cos(this.rotation);
       
-      // Calculamos o movimento desejado
       const deltaX = moveDirX * this.moveSpeed * dt * dir;
       const deltaY = moveDirY * this.moveSpeed * dt * dir;
 
       const limiteParede = 3.8;
 
-      // --- TENTATIVA DE MOVER NO EIXO X ---
       let nextX = this.position[0] + deltaX;
       
-      // 1. Verifica Parede X
       if (nextX > limiteParede) nextX = limiteParede;
       if (nextX < -limiteParede) nextX = -limiteParede;
 
-      // 2. Verifica Objetos (Mesa/Balcão) só no eixo X
-      // Se NÃO bater, aplicamos o movimento. Se bater, ignoramos o movimento X.
       if (!this.checkCollision(nextX, this.position[1])) {
           this.position[0] = nextX;
       }
 
-      // --- TENTATIVA DE MOVER NO EIXO Y ---
       let nextY = this.position[1] + deltaY;
 
-      // 1. Verifica Parede Y
       if (nextY > limiteParede) nextY = limiteParede;
       if (nextY < -limiteParede) nextY = -limiteParede;
 
-      // 2. Verifica Objetos (Mesa/Balcão) usando o NOVO X e o NOVO Y
-      // deslizar na quina da mesa
       if (!this.checkCollision(this.position[0], nextY)) {
           this.position[1] = nextY;
       }
@@ -138,21 +129,15 @@ class Chef {
 
   // Verifica se uma posição (x, y) bate em algum objeto
   checkCollision(x, y) {
-    // --- COLISÃO DA MESA (Lado Direito) ---
-    // A mesa está em x=3.8, y=-0.79. cria uma caixa em volta.
-    // Se X estiver entre 2.8 e 5.0 E Y estiver entre -1.8 e 0.2
     if (x > 2.8 && x < 5.0 && y > -1.8 && y < 0.2) {
-      return true; // Bateu na mesa
+      return true; 
     }
 
-    // --- COLISÃO DO BALCÃO (Canto Superior Esquerdo) ---
-    // O balcão está em x=-4.49, y=3.5.
-    // Se X estiver entre -5.0 e -3.5 E Y estiver entre 2.0 e 5.0
     if (x < -3.5 && x > -6.0 && y > 2.0 && y < 6.0) {
-      return true; // Bateu no balcão
+      return true; 
     }
 
-    return false; // Não bateu em nada
+    return false; 
   }
 
   triggerArmAnimation() {
@@ -201,7 +186,6 @@ class Chef {
     gl.uniformMatrix4fv(uniforms.uModel, false, modelMat);
     gl.uniform3fv(uniforms.uColor, new Float32Array(color));
     
-    // Bind buffers
     const posLoc = gl.getAttribLocation(this.program, 'position');
     gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuf);
     gl.enableVertexAttribArray(posLoc);
