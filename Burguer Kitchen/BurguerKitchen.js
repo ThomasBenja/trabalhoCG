@@ -18,6 +18,13 @@ var BurguerKitchen = function (gl) {
 
 	this.gameDuration = 300; //em segundos
     this.isGameOver = false;
+
+	this.estamina = false;
+	this.contagemestamina = 0;
+	this.contagemestamina2 = 0;
+
+	this.img = document.getElementById('correr');
+	this.img2 = document.getElementById('estamina');
 };
 
 
@@ -79,7 +86,12 @@ BurguerKitchen.prototype.Load = function (cb) {
 	this.recipes = [
     ["PaoBase", "Carne", "Queijo", "PaoTopo"],
     ["PaoBase", "Salada", "Tomate", "PaoTopo"],
-    ["PaoBase", "Carne", "Salada", "Tomate", "PaoTopo"]
+    ["PaoBase", "Carne", "Salada", "Tomate", "PaoTopo"],
+	["PaoBase","Salada", "Carne","Queijo","PaoTopo"],
+	["PaoBase","Queijo","Tomate","PaoTopo"],
+	["PaoBase","Queijo", "Carne","Queijo", "Carne","PaoTopo"],
+	["PaoBase","Tomate","Tomate","Carne", "PaoTopo"],
+	["PaoBase","Carne","Carne","Carne","Queijo", "PaoTopo"],
 	];
 
 	this.currentRecipeIndex = 0;
@@ -528,7 +540,6 @@ BurguerKitchen.prototype.Load = function (cb) {
 		me.waiter.position = [4, 3, 0]; 
 		me.waiter.scale = 0.75;
 		me.waiter.baseRotation = [0, 0, 90];
-		me.waiter.moveSpeed = 1.5;
 
 		console.log('Garçom carregado com sucesso!');
 	});
@@ -858,6 +869,8 @@ BurguerKitchen.prototype._Update = function (dt) {
     this.camera.position[2] = alturaDosOlhos;
 
 
+
+
 	if (this.PressedKeys.Forward && !this.PressedKeys.Back) {
 		this.camera.moveForward(dt / 1000 * this.MoveForwardSpeed);
 	}
@@ -920,15 +933,34 @@ BurguerKitchen.prototype._Update = function (dt) {
     this.chefKeys['d'] = this.PressedKeys.ChefRight || false;
     
     this.chef.update(dt / 1000, this.chefKeys);
-}
+	}
 
-	if (this.waiter) {
-		this.waiterKeys['w'] = this.PressedKeys.WaiterForward || false;
-		this.waiterKeys['a'] = this.PressedKeys.WaiterLeft || false;
-		this.waiterKeys['s'] = this.PressedKeys.WaiterBack || false;
-		this.waiterKeys['d'] = this.PressedKeys.WaiterRight || false;
-		
-		this.waiter.update(dt / 1000, this.waiterKeys);
+	if (this.chef.moveSpeed > 2.0 && (Date.now() - this.contagemestamina) > 4000) {
+    	this.estamina = true;
+    
+    	this.chef.moveSpeed = 1.5; 
+    	this.contagemestamina2 = Date.now(); 
+	}
+
+
+	if ((Date.now() - this.contagemestamina2) > 10000) {
+    	this.estamina = false;
+	}
+	else{
+		if(this.contagemestamina2!=0){
+			this.estamina = true;
+		}
+	}
+
+	if(this.estamina == false){
+		this.img2.style.display = 'none';
+		this.img.style.display = 'block';
+	}
+
+	if(this.estamina == true){
+		this.img.style.display = 'none';
+		this.img2.style.display = 'block';
+
 	}
 
 	if (this.chefKeys['C'] || this.chefKeys['c']) { 
@@ -1213,7 +1245,7 @@ BurguerKitchen.prototype._Render = function () {
 	}
 
 
-	if (this.WindowModel) {
+	if (this.WindowObject) {
 
 
 		var winModelMat = mat4.create();
@@ -1225,7 +1257,7 @@ BurguerKitchen.prototype._Render = function () {
 
 		this.gl.disable(this.gl.CULL_FACE);
 
-		this.WindowModel.draw(this.viewMatrix, this.projMatrix, winModelMat);
+		this.WindowObject.draw(this.viewMatrix, this.projMatrix, winModelMat);
 
 		this.gl.enable(this.gl.CULL_FACE);
 
@@ -1235,7 +1267,7 @@ BurguerKitchen.prototype._Render = function () {
 	
 		mat4.scale(winMat2, winMat2, [1.8, 0.5, 1]); 
 		this.gl.disable(this.gl.CULL_FACE);
-		this.WindowModel.draw(this.viewMatrix, this.projMatrix, winMat2);
+		this.WindowObject.draw(this.viewMatrix, this.projMatrix, winMat2);
 		this.gl.enable(this.gl.CULL_FACE);
 	}
 
@@ -1429,6 +1461,14 @@ BurguerKitchen.prototype._OnKeyDown = function (e) {
 				this.AttemptInteraction();
 			}
 			break;
+		case 'ShiftRight': 
+    	if (e.repeat) return; 
+
+    	if (this.chef && !this.estamina) {
+        	this.chef.moveSpeed = 5.0; 
+			this.contagemestamina = Date.now(); 
+    	}
+    	break;
 	}
 };
 
@@ -1473,6 +1513,12 @@ BurguerKitchen.prototype._OnKeyUp = function (e) {
 		case 'KeyK':
 			this.PressedKeys.WaiterBack = false;
 			break;
+		case 'ShiftRight':
+    if (this.chef) { 
+        this.chef.moveSpeed = 1.5; 
+        this.contagemestamina2 = Date.now(); 
+    }
+    break;
 	}
 }; 
 
